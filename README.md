@@ -41,7 +41,7 @@ VulnClaw executes:
   Round 4:  Reporting → Structured report + Python PoC script
 ```
 
-<img width="1148" height="642" alt="image" src="https://github.com/user-attachments/assets/576e1cf6-25da-4969-864b-40e77d020dbf" />
+<img width="1148" height="642" alt="image" src="assets/vulnclaw1.png" />
 
 <img width="2529" height="1136" alt="image" src="https://github.com/user-attachments/assets/dd49dc35-4082-4328-a521-8b7a92676e70" />
 
@@ -670,18 +670,6 @@ Unauthorized penetration testing is illegal. The author assumes no liability for
 ## License
 
 [MIT License](LICENSE)
-
----
-
-## Join the Community
-
-Connect with security enthusiasts to share, learn, and grow together.
-
-| Community Group | Developer Group |
-|:--:|:--:|
-| Join discussions and get the latest product updates and usage tips | Join us for open-source contributions and deep technical discussions |
-| ![VulnClaw Community Group](assets/社区交流群.jpg) | ![VulnClaw Developer Group](assets/VulnClaw开发者群聊.png) |
-| **QQ Group: 954402631** | **QQ Group: 1065858551** |
 
 ---
 
