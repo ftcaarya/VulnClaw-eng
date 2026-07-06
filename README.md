@@ -43,8 +43,6 @@ VulnClaw executes:
 
 <img width="1148" height="642" alt="image" src="assets/vulnclaw1.png" />
 
-<img width="2529" height="1136" alt="image" src="https://github.com/user-attachments/assets/dd49dc35-4082-4328-a521-8b7a92676e70" />
-
 Suitable for authorized pentests, CTF competitions, security training, and red team operations.
 
 ---
