@@ -94,6 +94,38 @@ pip install vulnclaw
 Requires Python 3.10+ (tested on 3.12). After installing, the `vulnclaw`
 command is available on your PATH.
 
+> **Debian/Ubuntu ("externally-managed-environment" error):** newer distros
+> block system-wide `pip`. Create a virtual environment **at the repo root**
+> first (don't name it `vulnclaw` — that collides with the package directory):
+>
+> ```bash
+> cd VulnClaw-eng        # the folder containing pyproject.toml
+> python3 -m venv .venv
+> source .venv/bin/activate
+> pip install -e .
+> ```
+
+### Enable the knowledge base (optional)
+
+On a fresh install the KB is empty, so startup shows
+`✗ Knowledge base disabled (no data available)`. This is only a warning —
+the agent runs a full pentest without it. To turn it on:
+
+```bash
+# Keyword mode — seeds the built-in entries, no extra dependencies
+vulnclaw kb update
+
+# Semantic search (better retrieval) — installs ChromaDB, then seed
+pip install -e ".[kb]"
+vulnclaw kb update
+
+# Check status
+vulnclaw kb status
+```
+
+The KB only injects extra CVE / technique reference snippets into the model's
+context when available; leaving it disabled does not affect the core workflow.
+
 ### Run with Docker (optional)
 
 The image bundles the Web UI plus the runtimes (`npx` / `uvx`) needed by the
