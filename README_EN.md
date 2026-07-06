@@ -79,8 +79,8 @@ Suitable for authorized pentests, CTF competitions, security training, and red t
 
 ```bash
 # Install from source (recommended — this is the English build)
-git clone https://github.com/Unclecheng-li/VulnClaw.git
-cd VulnClaw
+git clone https://github.com/ftcaarya/VulnClaw-eng.git
+cd VulnClaw-eng
 pip install -e .
 
 # Optional extras

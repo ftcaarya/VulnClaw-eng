@@ -133,8 +133,8 @@ EXPLORE（领一个 Intent）→ 用工具实际执行 → 把确认的结论写
 pip install vulnclaw
 
 # 从源码安装
-git clone https://github.com/Unclecheng-li/VulnClaw.git
-cd VulnClaw
+git clone https://github.com/ftcaarya/VulnClaw-eng.git
+cd VulnClaw-eng
 pip install -e .
 ```
 
