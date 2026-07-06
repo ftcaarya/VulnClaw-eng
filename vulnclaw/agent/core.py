@@ -90,14 +90,14 @@ class AgentCore:
         if RetrieverStatus is None:
             return
         if status == RetrieverStatus.CHROMADB_ACTIVE:
-            console.print("[green]✓ 知识库已启用 (ChromaDB)[/green]")
+            console.print("[green]✓ Knowledge base enabled (ChromaDB)[/green]")
         elif status == RetrieverStatus.KEYWORD_FALLBACK:
             console.print(
-                "[yellow]⚠ 知识库已降级为关键词模式 "
-                "(chromadb 未安装，运行 pip install vulnclaw[kb] 启用语义搜索)[/yellow]"
+                "[yellow]⚠ Knowledge base downgraded to keyword mode "
+                "(chromadb not installed; run pip install vulnclaw[kb] to enable semantic search)[/yellow]"
             )
         else:
-            console.print("[red]✗ 知识库已禁用 (无可用数据)[/red]")
+            console.print("[red]✗ Knowledge base disabled (no data available)[/red]")
 
     def _maybe_auto_save_session(self) -> None:
         """Persist session state when auto-save is enabled."""
@@ -154,7 +154,7 @@ class AgentCore:
             task_constraints=parsed_constraints,
             is_recon_phase=detected_phase == PentestPhase.RECON,
             is_ctf_mode=any(
-                kw in user_lower for kw in ["ctf", "flag", "夺旗", "解题", "找flag", "找出flag"]
+                kw in user_lower for kw in ["ctf", "flag", "capture the flag", "solve the challenge", "find flag", "find the flag"]
             ),
         )
         self.runtime.user_vuln_hint_rounds = 3 if self.runtime.user_vuln_hint else 0
@@ -169,16 +169,15 @@ class AgentCore:
             "personnel": False,
         }
         social_engineering_keywords = [
-            "社会工程",
-            "社工",
-            "人员信息",
-            "作者追踪",
-            "人物追踪",
-            "人物画像",
+            "social engineering",
+            "personnel info",
+            "author tracking",
+            "person tracking",
+            "persona profiling",
             "osint",
-            "情报",
-            "作者",
-            "调查",
+            "intelligence",
+            "author",
+            "investigate",
         ]
         self.context.state.recon_dimension4_active = self.runtime.is_recon_phase and any(
             kw in user_lower for kw in social_engineering_keywords
@@ -258,7 +257,7 @@ class AgentCore:
                         api_key="local-proxy", base_url=proxy_base
                     )
                 except ImportError:
-                    raise RuntimeError("请安装 openai 包: pip install openai")
+                    raise RuntimeError("Please install the openai package: pip install openai")
             return self._client
 
         token = resolve_llm_token(llm)
@@ -303,16 +302,15 @@ class AgentCore:
             else None
         )
         personnel_keywords = [
-            "社会工程",
-            "社工",
-            "人员信息",
-            "作者追踪",
-            "人物追踪",
-            "人物画像",
+            "social engineering",
+            "personnel info",
+            "author tracking",
+            "person tracking",
+            "persona profiling",
             "osint",
-            "情报",
-            "调查",
-            "作者",
+            "intelligence",
+            "investigate",
+            "author",
         ]
         enable_personnel = any(kw in (user_input or "").lower() for kw in personnel_keywords)
         if (
@@ -417,7 +415,7 @@ class AgentCore:
             self._maybe_auto_save_session()
 
         except Exception as e:
-            result.output = f"[!] Agent 错误: {e}"
+            result.output = f"[!] Agent error: {e}"
 
         return result
 

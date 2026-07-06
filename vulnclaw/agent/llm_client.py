@@ -37,11 +37,11 @@ def _fit_context_window(agent: Any, messages: list[dict[str, Any]]) -> list[dict
         from rich.console import Console
 
         Console().print(
-            f"[yellow][!] 上下文约 {current} tokens 超过窗口预算 {budget}，"
-            f"已截断至约 {estimate_tokens(trimmed)} tokens[/yellow]"
+            f"[yellow][!] Context is ~{current} tokens, exceeding the window budget {budget}; "
+            f"truncated to ~{estimate_tokens(trimmed)} tokens[/yellow]"
         )
     except Exception:
-        print(f"[!] 上下文截断: {current} → {estimate_tokens(trimmed)} tokens (预算 {budget})")
+        print(f"[!] Context truncated: {current} → {estimate_tokens(trimmed)} tokens (budget {budget})")
     return trimmed
 
 
@@ -152,7 +152,7 @@ async def _call_with_persistent_retries(
 
             retry_attempts += 1
             print(
-                f"[!] {stage_label} LLM API 异常响应，第 {retry_attempts} 次重连尝试中... (5s 后重试)",
+                f"[!] {stage_label} LLM API abnormal response; reconnection attempt #{retry_attempts}... (retrying in 5s)",
                 file=sys.stdout,
                 flush=True,
             )
@@ -168,7 +168,7 @@ async def _call_with_persistent_retries(
 
             retry_attempts += 1
             print(
-                f"[!] {stage_label} LLM 连接异常，第 {retry_attempts} 次重连尝试中... ({exc})",
+                f"[!] {stage_label} LLM connection error; reconnection attempt #{retry_attempts}... ({exc})",
                 file=sys.stdout,
                 flush=True,
             )
@@ -179,21 +179,21 @@ def _prepend_retry_notice(text: str, retry_attempts: int) -> str:
     """Annotate a successful response if retries happened within the same round."""
     if retry_attempts <= 0:
         return text
-    return f"[LLM恢复] 本轮在第 {retry_attempts} 次重连后恢复。\n{text}"
+    return f"[LLM recovery] This round recovered after reconnection attempt #{retry_attempts}.\n{text}"
 
 
 def _format_tool_results_fallback(
     tool_results: list[dict[str, Any]], skipped_info: list[str]
 ) -> str:
     """Build a plain-text fallback summary when provider tool-summary format is incompatible."""
-    parts = ["[tool results processed] 当前提供商不兼容标准工具总结回传，已降级为纯文本结果摘要："]
+    parts = ["[tool results processed] The current provider is incompatible with the standard tool-summary callback; downgraded to a plain-text result summary:"]
     for item in tool_results:
         content = item.get("content", "") if isinstance(item, dict) else str(item)
         if len(content) > 800:
-            content = content[:400] + "\n...[中间省略]...\n" + content[-400:]
+            content = content[:400] + "\n...[middle omitted]...\n" + content[-400:]
         parts.append(content)
     if skipped_info:
-        parts.append("⚠️ 本轮跳过: " + "; ".join(skipped_info))
+        parts.append("⚠️ Skipped this round: " + "; ".join(skipped_info))
     return "\n".join(parts)
 
 
@@ -219,7 +219,7 @@ async def call_llm(
     response, retry_attempts = await _call_with_persistent_retries(
         agent,
         lambda: client.chat.completions.create(**kwargs),
-        "单轮",
+        "single-round",
     )
 
     choice = response.choices[0]
@@ -252,7 +252,7 @@ async def call_llm_auto(
     response, retry_attempts = await _call_with_persistent_retries(
         agent,
         lambda: client.chat.completions.create(**kwargs),
-        "自主循环",
+        "autonomous-loop",
     )
 
     choice = response.choices[0]
@@ -264,7 +264,7 @@ async def call_llm_auto(
             if not isinstance(tc, dict) or "tool_call" not in tc:
                 import sys
 
-                print(f"[!] 跳过异常工具结果: {type(tc).__name__} {str(tc)[:100]}", file=sys.stderr)
+                print(f"[!] Skipping abnormal tool result: {type(tc).__name__} {str(tc)[:100]}", file=sys.stderr)
                 continue
             executed_tcs.append(tc["tool_call"])
 
@@ -300,13 +300,13 @@ async def call_llm_auto(
             try:
                 args_str = str(tc.function.arguments)[:200]
             except Exception:
-                args_str = "<无法读取>"
-            tool_summary_parts.append(f"调用工具: {tc.function.name}({args_str})")
+                args_str = "<unreadable>"
+            tool_summary_parts.append(f"Tool call: {tc.function.name}({args_str})")
         for tr in tool_results:
             content = tr.get("content", "") if isinstance(tr, dict) else str(tr)
             if len(content) > 1000:
-                content = content[:500] + "\n...[中间省略]...\n" + content[-500:]
-            tool_summary_parts.append(f"工具结果: {content}")
+                content = content[:500] + "\n...[middle omitted]...\n" + content[-500:]
+            tool_summary_parts.append(f"Tool result: {content}")
             if (
                 isinstance(tr, dict)
                 and isinstance(tr.get("structured_content"), dict)
@@ -314,17 +314,17 @@ async def call_llm_auto(
             ):
                 structured = json.dumps(tr["structured_content"], ensure_ascii=False)
                 if len(structured) > 1000:
-                    structured = structured[:500] + "\n...[中间省略]...\n" + structured[-500:]
-                tool_summary_parts.append(f"结构化结果: {structured}")
+                    structured = structured[:500] + "\n...[middle omitted]...\n" + structured[-500:]
+                tool_summary_parts.append(f"Structured result: {structured}")
         if skipped_info:
-            tool_summary_parts.append(f"⚠️ 本轮跳过: {'; '.join(skipped_info)}")
+            tool_summary_parts.append(f"⚠️ Skipped this round: {'; '.join(skipped_info)}")
 
         try:
             kwargs["messages"] = _fit_context_window(agent, messages)
             response2, second_retry_attempts = await _call_with_persistent_retries(
                 agent,
                 lambda: client.chat.completions.create(**kwargs),
-                "工具总结",
+                "tool-summary",
             )
             final_text = extract_response(response2.choices[0].message)
             # 上下文已由 loop_controller L55 / core.py L385 写入，避免重复
@@ -335,7 +335,7 @@ async def call_llm_auto(
                 fallback = _format_tool_results_fallback(tool_results, skipped_info)
                 # 同上: 不在此写入上下文
                 return fallback
-            return f"[tool results processed] 继续分析错误: {e2}"
+            return f"[tool results processed] Continue analyzing error: {e2}"
 
     return _prepend_retry_notice(extract_response(choice.message), retry_attempts)
 
@@ -483,7 +483,7 @@ def _assemble_tool_calls(tool_calls_chunks: list[dict]) -> list[Any]:
         )
         if not _validate_tool_call(candidate):
             print(
-                f"[!] 丢弃不完整的流式 tool_call: id={tc_data['id']!r} "
+                f"[!] Discarding incomplete streaming tool_call: id={tc_data['id']!r} "
                 f"name={tc_data['function']['name']!r} "
                 f"args={tc_data['function']['arguments'][:80]!r}",
                 file=sys.stderr,
@@ -602,7 +602,7 @@ async def call_llm_stream(
     response_fallback, _ = await _call_with_persistent_retries(
         agent,
         lambda: client.chat.completions.create(**kwargs),
-        "单轮",
+        "single-round",
     )
 
     # 降级到非流式 call_llm（有 retry + tool_calls 处理），行为一致
@@ -775,7 +775,7 @@ async def call_llm_auto_stream(
                         fallback = _format_tool_results_fallback(tool_results, skipped_info)
                         # 同上: 不在此写入上下文
                         return fallback
-                    return f"[tool results processed] 继续分析错误: {e2}"
+                    return f"[tool results processed] Continue analyzing error: {e2}"
 
         # 上下文已由调用方写入，不在此重复添加
         return full_text

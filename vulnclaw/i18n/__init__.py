@@ -11,7 +11,7 @@ from typing import Any, Optional
 class I18nLoader:
     """Load and manage translations."""
 
-    def __init__(self, lang: str = "zh") -> None:
+    def __init__(self, lang: str = "en") -> None:
         self.lang = lang
         self.translations: dict[str, str] = {}
         self.logger = logging.getLogger(__name__)
@@ -64,24 +64,19 @@ class I18nLoader:
         """Detect language from environment or config.
 
         Priority:
-        1. VULNCLAW_LANG environment variable
-        2. LANG environment variable
-        3. Default to 'zh'
+        1. VULNCLAW_LANG environment variable (explicit override)
+        2. Default to 'en'
+
+        English is the default output language. Chinese remains available
+        by explicitly setting VULNCLAW_LANG=zh or the session.language config.
         """
         # Check VulnClaw specific env var
         lang_env = os.environ.get("VULNCLAW_LANG", "").lower()
         if lang_env in ("zh", "en"):
             return lang_env
 
-        # Check system LANG
-        system_lang = os.environ.get("LANG", "").lower()
-        if system_lang.startswith("zh"):
-            return "zh"
-        elif system_lang.startswith("en"):
-            return "en"
-
-        # Default to Chinese for this project
-        return "zh"
+        # Default to English
+        return "en"
 
 
 # Global translator instance

@@ -45,7 +45,7 @@ class ReportContentFilter:
         re.compile(r"──\s*Round\s*\d+\s*──", re.DOTALL),
         re.compile(r"Cycle\s*\d+\s*\|\s*Round\s*\d+", re.IGNORECASE),
         re.compile(r"Round\s+\d+:", re.IGNORECASE),
-        re.compile(r"第\s*\d+\s*轮", re.IGNORECASE),
+        re.compile(r"Round\s*\d+", re.IGNORECASE),
     ]
 
     # think 标签（LLM 思考过程）
@@ -60,8 +60,8 @@ class ReportContentFilter:
         re.compile(r"<reasoning>[\s\S]*?</reasoning>?", re.IGNORECASE),
         re.compile(r"<reasoning>?[\s\S]*", re.IGNORECASE),
         re.compile(r"\[think\]", re.IGNORECASE),
-        re.compile(r"##\s*思考\s*", re.IGNORECASE),
-        re.compile(r"###\s*推理\s*", re.IGNORECASE),
+        re.compile(r"##\s*Thinking\s*", re.IGNORECASE),
+        re.compile(r"###\s*Reasoning\s*", re.IGNORECASE),
     ]
 
     # Python 代码块（多种格式）
@@ -85,8 +85,8 @@ class ReportContentFilter:
     DEBUG_PATTERNS = [
         re.compile(r"^\s*──.*──\s*$", re.MULTILINE),  # 分隔线
         re.compile(r"^\s*\[=\]+\s*$", re.MULTILINE),  # ===== 样式
-        re.compile(r"工具调用|tool_call", re.IGNORECASE),
-        re.compile(r"调用工具|调用结果", re.IGNORECASE),
+        re.compile(r"tool call|tool_call", re.IGNORECASE),
+        re.compile(r"calling tool|call result", re.IGNORECASE),
         re.compile(r"\[LLM\s+[A-Z_]+\]", re.IGNORECASE),  # [LLM THINKING] 等
     ]
 
@@ -98,9 +98,9 @@ class ReportContentFilter:
 
     # 阶段切换标记
     PHASE_PATTERNS = [
-        re.compile(r"阶段切换\s*[→\-]>\s*\w+", re.IGNORECASE),
-        re.compile(r"进入\s*\w+\s*阶段", re.IGNORECASE),
-        re.compile(r"当前阶段:\s*\w+", re.IGNORECASE),
+        re.compile(r"phase switch\s*[→\-]>\s*\w+", re.IGNORECASE),
+        re.compile(r"entering\s*\w+\s*phase", re.IGNORECASE),
+        re.compile(r"current phase:\s*\w+", re.IGNORECASE),
     ]
 
     @classmethod
@@ -235,8 +235,8 @@ class ReportContentFilter:
             result = pattern.sub("", result)
 
         # 移除工具结果标记
-        result = re.sub(r"\[结果\]\s*:?\s*", "", result)
-        result = re.sub(r"\[输出\]\s*:?\s*", "", result)
+        result = re.sub(r"\[result\]\s*:?\s*", "", result)
+        result = re.sub(r"\[output\]\s*:?\s*", "", result)
 
         return result
 
@@ -322,8 +322,8 @@ def extract_findings_section(content: str) -> Optional[str]:
     如果找不到专门的漏洞列表，返回 None。
     """
     patterns = [
-        r"(##\s*漏洞列表\s*\n[\s\S]*?)(?=##|\Z)",
-        r"(##\s*详细发现\s*\n[\s\S]*?)(?=##|\Z)",
+        r"(##\s*Vulnerability List\s*\n[\s\S]*?)(?=##|\Z)",
+        r"(##\s*Detailed Findings\s*\n[\s\S]*?)(?=##|\Z)",
         r"(##\s*Findings\s*\n[\s\S]*?)(?=##|\Z)",
     ]
 
@@ -342,7 +342,7 @@ def remove_unverified_findings(content: str) -> str:
     """
     # 移除 [未验证] 标记的漏洞章节
     pattern = re.compile(
-        r"(###\s*\[[^\]]*\]\s*[^\n]*未验证[^\n]*\n[\s\S]*?)(?=###|\Z)",
+        r"(###\s*\[[^\]]*\]\s*[^\n]*Unverified[^\n]*\n[\s\S]*?)(?=###|\Z)",
         re.IGNORECASE,
     )
     result = pattern.sub("", content)
@@ -354,7 +354,7 @@ def remove_unverified_findings(content: str) -> str:
 
     for line in lines:
         # 检测未验证章节开始
-        if "[未验证]" in line and line.strip().startswith("###"):
+        if "[Unverified]" in line and line.strip().startswith("###"):
             skip_section = True
             continue
 

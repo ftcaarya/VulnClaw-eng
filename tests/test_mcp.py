@@ -110,7 +110,7 @@ class TestMCPRouter:
         from vulnclaw.mcp.router import MCPRouter
 
         router = MCPRouter()
-        results = router.route("发请求访问这个接口")
+        results = router.route("send request to call this endpoint")
         assert len(results) > 0
         assert any(r["server"] == "fetch" for r in results)
 
@@ -118,7 +118,7 @@ class TestMCPRouter:
         from vulnclaw.mcp.router import MCPRouter
 
         router = MCPRouter()
-        results = router.route("帮我抓包看一下这个请求")
+        results = router.route("capture packet and view this request")
         assert len(results) > 0
         assert any(r["server"] == "burp" for r in results)
 
@@ -126,7 +126,7 @@ class TestMCPRouter:
         from vulnclaw.mcp.router import MCPRouter
 
         router = MCPRouter()
-        results = router.route("打开网页看看")
+        results = router.route("open page and take a look")
         assert len(results) > 0
         assert any(r["server"] == "chrome-devtools" for r in results)
 
@@ -134,7 +134,7 @@ class TestMCPRouter:
         from vulnclaw.mcp.router import MCPRouter
 
         router = MCPRouter()
-        results = router.route("截图")
+        results = router.route("screenshot")
         assert len(results) > 0
         assert any(r["tool"] == "screenshot" for r in results)
 
@@ -142,7 +142,7 @@ class TestMCPRouter:
         from vulnclaw.mcp.router import MCPRouter
 
         router = MCPRouter()
-        results = router.route("记住这个发现")
+        results = router.route("remember this finding")
         assert len(results) > 0
         assert any(r["server"] == "memory" for r in results)
 
@@ -150,28 +150,28 @@ class TestMCPRouter:
         from vulnclaw.mcp.router import MCPRouter
 
         router = MCPRouter()
-        results = router.route("今天天气怎么样")
+        results = router.route("how is the weather today")
         assert len(results) == 0
 
     def test_extract_url(self):
         from vulnclaw.mcp.router import MCPRouter
 
         router = MCPRouter()
-        assert router.extract_url("访问 https://example.com/path") == "https://example.com/path"
-        assert router.extract_url("没有URL") is None
+        assert router.extract_url("visit https://example.com/path") == "https://example.com/path"
+        assert router.extract_url("no URL here") is None
 
     def test_extract_ip(self):
         from vulnclaw.mcp.router import MCPRouter
 
         router = MCPRouter()
-        assert router.extract_ip("扫描 192.168.1.100") == "192.168.1.100"
-        assert router.extract_ip("没有IP") is None
+        assert router.extract_ip("scan 192.168.1.100") == "192.168.1.100"
+        assert router.extract_ip("no IP here") is None
 
     def test_suggest_tools_for_phase(self):
         from vulnclaw.mcp.router import MCPRouter
 
         router = MCPRouter()
-        tools = router.suggest_tools_for_phase("信息收集")
+        tools = router.suggest_tools_for_phase("Recon")
         assert len(tools) > 0
         assert any(t["server"] == "fetch" for t in tools)
 
@@ -179,14 +179,14 @@ class TestMCPRouter:
         from vulnclaw.mcp.router import MCPRouter
 
         router = MCPRouter()
-        tools = router.suggest_tools_for_phase("未知阶段")
+        tools = router.suggest_tools_for_phase("Unknown Phase")
         assert tools == []
 
     def test_route_confidence(self):
         from vulnclaw.mcp.router import MCPRouter
 
         router = MCPRouter()
-        results = router.route("发请求")
+        results = router.route("send request")
         for r in results:
             assert "confidence" in r
             assert 0 < r["confidence"] <= 1

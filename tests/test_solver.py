@@ -151,7 +151,7 @@ async def test_solve_rejects_hallucinated_flag(monkeypatch):
     assert result.completed is False
     assert "hallucination" in events
     # 被拒绝的旗标产生一条 [未验证] 事实
-    assert any("[未验证]" in f.description for f in result.board.facts)
+    assert any("[Unverified]" in f.description for f in result.board.facts)
 
 
 async def test_solve_rejects_ungrounded_completion(monkeypatch):
@@ -193,7 +193,7 @@ async def test_solve_rejects_negated_completion_claim(monkeypatch):
             # complete=true 但 reason 是否定结论（应被否定闸门拦截）
             return {
                 "complete": True,
-                "reason": "f001 仅确认端口与指纹，未达到 goal 要求的渗透完成标准",
+                "reason": "f001 only confirmed ports and fingerprints; the goal's pentest completion standard was not achieved",
                 "evidence": ["f001"],
             }
         return {"complete": False}  # 之后不再提出 → 前沿耗尽
@@ -290,7 +290,7 @@ async def test_solve_stops_when_frontier_exhausted(monkeypatch):
     result = await solver.solve(_fake_agent(), origin="t", goal="g", max_steps=10)
 
     assert result.completed is False
-    assert result.reason == "探索前沿耗尽"
+    assert result.reason == "exploration frontier exhausted"
     # only the seeded origin fact
     assert result.facts == 1
 
@@ -442,7 +442,7 @@ async def test_solve_respects_safety_step_budget(monkeypatch):
     result = await solver.solve(_fake_agent(), origin="t", goal="g", max_steps=3)
 
     assert result.completed is False
-    assert result.reason == "触达安全预算上限"
+    assert result.reason == "reached the safety-budget limit"
     assert result.steps == 3
 
 

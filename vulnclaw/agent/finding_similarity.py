@@ -26,65 +26,58 @@ if TYPE_CHECKING:
 
 # ── 漏洞类型归一化映射 ───────────────────────────────────────────────────
 
-# 别名 -> 规范类型。键统一为小写、去空格的形式。
+# alias -> canonical type. Keys are normalized to lowercase, whitespace-collapsed form.
 _VULN_TYPE_ALIASES: dict[str, str] = {
-    # SQL 注入
+    # SQL injection
     "sqli": "sql_injection",
-    "sql注入": "sql_injection",
     "sql injection": "sql_injection",
     "blind sqli": "sql_injection",
-    "盲注": "sql_injection",
-    "注入漏洞": "sql_injection",
+    "injection vulnerability": "sql_injection",
     "sql_injection": "sql_injection",
     # XSS
     "xss": "cross_site_scripting",
-    "跨站脚本": "cross_site_scripting",
-    "反射型xss": "cross_site_scripting",
-    "存储型xss": "cross_site_scripting",
-    "xss跨站脚本": "cross_site_scripting",
+    "reflected xss": "cross_site_scripting",
+    "stored xss": "cross_site_scripting",
+    "xss cross-site scripting": "cross_site_scripting",
     "cross site scripting": "cross_site_scripting",
     "cross_site_scripting": "cross_site_scripting",
     # SSRF
     "ssrf": "server_side_request_forgery",
-    "服务端请求伪造": "server_side_request_forgery",
     "server side request forgery": "server_side_request_forgery",
     "server_side_request_forgery": "server_side_request_forgery",
     # RCE
     "rce": "remote_code_execution",
-    "命令执行": "remote_code_execution",
-    "远程代码执行": "remote_code_execution",
-    "命令注入": "remote_code_execution",
+    "command execution": "remote_code_execution",
+    "command injection": "remote_code_execution",
     "remote code execution": "remote_code_execution",
     "remote_code_execution": "remote_code_execution",
-    # LFI / 文件包含
+    # LFI / file inclusion
     "lfi": "local_file_inclusion",
-    "文件包含": "local_file_inclusion",
+    "file inclusion": "local_file_inclusion",
     "rfi": "local_file_inclusion",
-    "路径遍历": "local_file_inclusion",
-    "文件包含/遍历": "local_file_inclusion",
+    "path traversal": "local_file_inclusion",
+    "file inclusion/traversal": "local_file_inclusion",
     "local file inclusion": "local_file_inclusion",
     "local_file_inclusion": "local_file_inclusion",
-    # IDOR / 越权
+    # IDOR / broken access control
     "idor": "insecure_direct_object_reference",
-    "越权": "insecure_direct_object_reference",
-    "横向越权": "insecure_direct_object_reference",
-    "纵向越权": "insecure_direct_object_reference",
+    "broken access control": "insecure_direct_object_reference",
     "insecure direct object reference": "insecure_direct_object_reference",
     "insecure_direct_object_reference": "insecure_direct_object_reference",
     # CSRF
     "csrf": "cross_site_request_forgery",
-    "跨站请求伪造": "cross_site_request_forgery",
     "cross site request forgery": "cross_site_request_forgery",
-    # 认证绕过
-    "认证绕过": "auth_bypass",
-    "未授权": "auth_bypass",
-    "未授权访问": "auth_bypass",
-    "未认证": "auth_bypass",
-    "无需认证": "auth_bypass",
-    # 信息泄露
-    "信息泄露": "info_disclosure",
-    "数据泄露": "info_disclosure",
-    "敏感信息泄露": "info_disclosure",
+    # Authentication bypass
+    "authentication bypass": "auth_bypass",
+    "auth bypass": "auth_bypass",
+    "unauthorized": "auth_bypass",
+    "unauthorized access": "auth_bypass",
+    "unauthenticated": "auth_bypass",
+    "no auth required": "auth_bypass",
+    # Information disclosure
+    "information disclosure": "info_disclosure",
+    "data leak": "info_disclosure",
+    "sensitive information disclosure": "info_disclosure",
     "info disclosure": "info_disclosure",
 }
 
@@ -118,7 +111,7 @@ def normalize_vuln_type(vuln_type: str) -> str:
 _URL_RE = re.compile(r'https?://[^\s<>"\')\]]+', re.IGNORECASE)
 _TOKEN_RE = re.compile(r"[a-z0-9一-鿿]+", re.IGNORECASE)
 # 标点边界标记（如 [自动]、[已确认]）应在分词前去掉，避免污染词集合
-_NOISE_TAGS = ("[自动]", "[已确认]", "[未验证]")
+_NOISE_TAGS = ("[Auto]", "[Confirmed]", "[Unverified]")
 
 
 def _normalize_url_path(url: str) -> str:

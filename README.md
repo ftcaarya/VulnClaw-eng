@@ -12,7 +12,9 @@
 [![Security](https://img.shields.io/badge/Scope-Authorized_Only-red)](#-安全声明)
 <br>
 
-🌐 **English version**: [`README_EN.md`](README_EN.md)
+🌐 **English build** — this repository runs entirely in English (prompts, CLI/TUI,
+reports, and the agent's replies). See [`README_EN.md`](README_EN.md) and install
+from source (`pip install -e .`); the PyPI package is the upstream Chinese version.
 
 **本项目是可独立运行的 AI 渗透测试 Agent。**
 <br>

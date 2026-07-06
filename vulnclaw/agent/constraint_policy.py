@@ -69,10 +69,10 @@ def validate_phase_transition(
     return f"{violation} (phase transition to {next_phase.value})"
 
 
-# 纯本地/知识类工具：不与目标交互，不纳入「动作范围」约束
+# Pure local/knowledge tools: do not interact with the target, not subject to "action scope" constraints
 LOCAL_META_TOOLS = {"load_skill_reference", "crypto_decode"}
 
-# 真正代表「利用」意图的攻击载荷特征——与传输方式（HTTP 方法/网络库）无关
+# Attack-payload signatures that genuinely represent "exploit" intent — independent of transport (HTTP method / network library)
 EXPLOIT_PAYLOAD_MARKERS = [
     "union select",
     " or 1=1",
@@ -97,7 +97,7 @@ EXPLOIT_PAYLOAD_MARKERS = [
     "powershell -e",
 ]
 
-# python_execute 中代表本地命令执行/反弹 shell 的特征
+# Signatures in python_execute that represent local command execution / reverse shell
 PYTHON_EXPLOIT_MARKERS = [
     "os.system",
     "subprocess",
@@ -112,13 +112,14 @@ PYTHON_EXPLOIT_MARKERS = [
 def infer_tool_action(tool_name: str, args: dict[str, object]) -> str:
     """Infer the effective action class of a tool invocation.
 
-    关键原则：只有「实际攻击载荷」才推断为 exploit；HTTP 方法、是否用 requests/urllib
-    等传输细节不构成利用意图（recon/scan 阶段本就需要发 POST/OPTIONS、用 requests 探测）。
+    Key principle: only an "actual attack payload" is inferred as exploit; transport details
+    like the HTTP method or whether requests/urllib is used do not constitute exploit intent
+    (recon/scan phases legitimately send POST/OPTIONS and probe with requests).
     """
     normalized_tool = (tool_name or "").strip().lower()
 
     if normalized_tool in LOCAL_META_TOOLS:
-        return "recon"  # 仅本地操作，配合 validate_tool_action 豁免
+        return "recon"  # local-only operation; exempted together with validate_tool_action
 
     if normalized_tool == "nmap_scan":
         return "recon"
@@ -129,7 +130,7 @@ def infer_tool_action(tool_name: str, args: dict[str, object]) -> str:
         body = str(args.get("body", "") or "").lower()
         if any(marker in url or marker in body for marker in EXPLOIT_PAYLOAD_MARKERS):
             return "exploit"
-        # 方法本身不代表利用：GET/HEAD/OPTIONS 属侦察，其它（POST 测表单等）属扫描
+        # The method itself is not exploit intent: GET/HEAD/OPTIONS are recon, others (POST form testing, etc.) are scan
         if method in ("GET", "HEAD", "OPTIONS"):
             return "recon"
         return "scan"
@@ -138,7 +139,7 @@ def infer_tool_action(tool_name: str, args: dict[str, object]) -> str:
         code = str(args.get("code", "") or "").lower()
         if any(marker in code for marker in EXPLOIT_PAYLOAD_MARKERS + PYTHON_EXPLOIT_MARKERS):
             return "exploit"
-        # 用 requests/httpx/urllib/socket 做 HTTP 探测属扫描，而非利用
+        # HTTP probing via requests/httpx/urllib/socket is scan, not exploit
         if any(m in code for m in ("requests.", "httpx.", "urllib", "http.client", "socket")):
             return "scan"
         return "recon"
@@ -153,7 +154,7 @@ def validate_tool_action(
     tool_name: str, args: dict[str, object], constraints: TaskConstraints
 ) -> str | None:
     """Return a constraint violation when a tool invocation implies a blocked action."""
-    # 纯本地/知识类工具不受动作范围约束（加载文档、编解码不触碰目标）
+    # Pure local/knowledge tools are not subject to action-scope constraints (loading docs, encode/decode don't touch the target)
     if (tool_name or "").strip().lower() in LOCAL_META_TOOLS:
         return None
     inferred = infer_tool_action(tool_name, args)

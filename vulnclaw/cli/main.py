@@ -114,7 +114,7 @@ class TerminalStreamSink:
     def on_tool_call(self, tool_name: str, args: str) -> None:
         """Display tool call notification."""
         self._console.print()
-        self._console.print(f"[bold cyan]→ 调用工具: {tool_name}[/] {args[:100]}")
+        self._console.print(f"[bold cyan]→ Tool call: {tool_name}[/] {args[:100]}")
         self._status_printed = False
 
     def on_tool_result(self, result_summary: str) -> None:
@@ -122,7 +122,7 @@ class TerminalStreamSink:
         self._console.print()
         if len(result_summary) > 200:
             result_summary = result_summary[:200] + "..."
-        self._console.print(f"[dim]→ 工具结果: {result_summary}[/]")
+        self._console.print(f"[dim]→ Tool result: {result_summary}[/]")
 
     def on_stream_end(self) -> None:
         """Handle stream end."""
@@ -192,10 +192,10 @@ def _make_solve_event_printer(target_console):
                 pass
             elif decision.get("intents"):
                 target_console.print(
-                    f"[cyan]◆ Reason:[/cyan] 提出 {len(decision['intents'])} 个新探索方向"
+                    f"[cyan]◆ Reason:[/cyan] proposed {len(decision['intents'])} new exploration directions"
                 )
             else:
-                target_console.print("[dim]◆ Reason: 暂不新增方向[/dim]")
+                target_console.print("[dim]◆ Reason: no new directions for now[/dim]")
         elif kind == "frontier_recovery":
             if payload.get("reason") == "fallback_intents":
                 target_console.print(
@@ -208,7 +208,7 @@ def _make_solve_event_printer(target_console):
                     f"no open intents, retry {payload.get('streak', '?')}"
                 )
         elif kind == "completed":
-            target_console.print("[green]✓ Reason: 目标达成[/green]")
+            target_console.print("[green]✓ Reason: goal achieved[/green]")
         elif kind == "explore_start":
             target_console.print(
                 f"[yellow]▶ Explore {payload['intent_id']}:[/yellow] {payload['description'][:90]}"
@@ -219,12 +219,12 @@ def _make_solve_event_printer(target_console):
             )
         elif kind == "hallucination":
             target_console.print(
-                f"[red]⚠ 幻觉拦截 {payload['intent_id']}:[/red] 声称的 flag 无真实证据，已拒绝"
+                f"[red]⚠ Hallucination blocked {payload['intent_id']}:[/red] claimed flag has no real evidence; rejected"
             )
         elif kind == "complete_rejected":
-            target_console.print(f"[red]⚠ 拒绝完成:[/red] {payload.get('reason', '')[:90]}")
+            target_console.print(f"[red]⚠ Completion rejected:[/red] {payload.get('reason', '')[:90]}")
         elif kind == "abandon":
-            target_console.print(f"[red]✗ 放弃 {payload['intent_id']}[/red]")
+            target_console.print(f"[red]✗ Abandoned {payload['intent_id']}[/red]")
 
     return on_event
 
@@ -515,7 +515,7 @@ def _run_repl() -> None:
 
             # Handle auto mode persistence: exit auto mode on explicit commands
             if auto_mode_active and user_input.lower().strip() in (
-                "chat", "manual", "exit auto", "单轮", "手动",
+                "chat", "manual", "exit auto", "single-round", "manual-mode",
             ):
                 auto_mode_active = False
                 last_auto_input = ""
@@ -571,9 +571,9 @@ def _run_repl() -> None:
                                 console.print()
                                 console.print(
                                     Panel(
-                                        f"{'✅ 目标达成' if done else '⊘ 未达成'} — "
+                                        f"{'✅ Goal achieved' if done else '⊘ Not achieved'} — "
                                         f"facts={board.get('facts', 0)} intents={board.get('intents', 0)}\n"
-                                        f"原因: {board.get('complete_reason') or '探索结束'}",
+                                        f"Reason: {board.get('complete_reason') or 'exploration ended'}",
                                         title="Solve",
                                         border_style="green" if done else "yellow",
                                     )
@@ -625,13 +625,11 @@ def _run_repl() -> None:
                                 if any(
                                     token in user_input.lower()
                                     for token in (
-                                        "输出",
-                                        "保存",
-                                        "写到",
-                                        "导出",
+                                        "output",
                                         "save",
-                                        "write",
+                                        "write to",
                                         "export",
+                                        "write",
                                     )
                                 ):
                                     _auto_save_recon_report(agent, user_input, config)
@@ -975,10 +973,10 @@ def run(
     orchestrated = asyncio.run(_run())
     if board_holder.get("board"):
         board = board_holder["board"]
-        status = "✅ 目标达成" if board.get("completed") else "⊘ 未达成"
+        status = "✅ Goal achieved" if board.get("completed") else "⊘ Not achieved"
         console.print(
             f"\n[bold]{status}[/bold] — facts={board.get('facts', 0)} "
-            f"intents={board.get('intents', 0)} 原因: {board.get('complete_reason') or '探索结束'}"
+            f"intents={board.get('intents', 0)} reason: {board.get('complete_reason') or 'exploration ended'}"
         )
     else:
         total_findings = orchestrated.summary["findings_count"]
@@ -1014,9 +1012,9 @@ def solve(
         err_console.print("[!] Configure LLM credentials first (api_key or auth_mode).")
         raise typer.Exit(1)
 
-    resolved_goal = goal or "找到 flag / 拿到 shell / 确认并验证高价值漏洞"
+    resolved_goal = goal or "find the flag / obtain a shell / confirm and verify high-value vulnerabilities"
     task_prompt = prompt or (
-        f"对 {target} 进行授权渗透测试。这是明确授权、在范围内的目标。目标(goal)：{resolved_goal}。"
+        f"Perform authorized penetration testing against {target}. This is an explicitly authorized, in-scope target. goal: {resolved_goal}."
     )
     console.print(f"[*] Target: [bold]{target}[/] | Goal: [bold]{resolved_goal}[/]")
 
@@ -1049,10 +1047,10 @@ def solve(
 
     asyncio.run(_run())
     board = holder.get("board") or {}
-    status = "✅ 目标达成" if board.get("completed") else "⊘ 未达成"
+    status = "✅ Goal achieved" if board.get("completed") else "⊘ Not achieved"
     console.print(
         f"\n[bold]{status}[/bold] — facts={board.get('facts', 0)} "
-        f"intents={board.get('intents', 0)} 原因: {board.get('complete_reason') or '探索结束'}"
+        f"intents={board.get('intents', 0)} reason: {board.get('complete_reason') or 'exploration ended'}"
     )
 
 
@@ -1978,11 +1976,11 @@ def kb_status() -> None:
     category_summary = ", ".join(f"{cat}={count}" for cat, count in sorted(stats.items()))
 
     if status == RetrieverStatus.CHROMADB_ACTIVE:
-        line = "[green]✓ 知识库已启用 (ChromaDB 语义检索)[/green]"
+        line = "[green]✓ Knowledge base enabled (ChromaDB semantic search)[/green]"
     elif status == RetrieverStatus.KEYWORD_FALLBACK:
-        line = "[yellow]⚠ 知识库已降级为关键词模式 (chromadb 未安装)[/yellow]"
+        line = "[yellow]⚠ Knowledge base downgraded to keyword mode (chromadb not installed)[/yellow]"
     else:
-        line = "[red]✗ 知识库已禁用 (无可用数据)[/red]"
+        line = "[red]✗ Knowledge base disabled (no data available)[/red]"
 
     console.print(
         Panel(
@@ -1990,7 +1988,7 @@ def kb_status() -> None:
             f"Backend: [bold]{status.value}[/]\n"
             f"Detail: {detail or 'n/a'}\n"
             f"Entries: [bold]{total}[/] ({category_summary or 'empty'})\n"
-            f"语义搜索: 运行 [bold]pip install vulnclaw\\[kb][/] 启用 ChromaDB",
+            f"Semantic search: run [bold]pip install vulnclaw\\[kb][/] to enable ChromaDB",
             title="KB Status",
             border_style="cyan",
         )
@@ -2142,64 +2140,53 @@ def _should_auto_pentest(user_input: str, current_target: Optional[str]) -> bool
 
     # Explicit auto-mode triggers
     auto_keywords = [
-        "渗透测试",
-        "进行渗透",
-        "做渗透",
-        "打一下",
-        "全面测试",
+        "penetration test",
         "pentest",
+        "do a pentest",
+        "pop it",
         "full test",
         "auto",
-        "自主渗透模式",
-        "自主模式",
-        "找出flag",
-        "找到flag",
-        "拿flag",
-        "get flag",
+        "autonomous pentest mode",
+        "autonomous mode",
+        "find the flag",
         "find flag",
-        "解题",
-        "做题",
-        "挑战",
+        "get flag",
+        "capture the flag",
+        "solve the challenge",
         "challenge",
         "ctf",
-        "弱口令",
-        "爆破",
-        "绕过",
+        "weak password",
+        "brute force",
         "bypass",
         "brute",
-        "搜集",
-        "收集",
-        "信息收集",
-        "侦察",
+        "gather",
+        "collect",
+        "information gathering",
         "recon",
         "reconnaissance",
-        "社工",
+        "social engineering",
         "osint",
-        "情报",
         "intelligence",
-        "分析目标",
-        "目标分析",
-        "资产发现",
-        "目录扫描",
-        "探测",
-        "探索",
-        "调查",
+        "analyze target",
+        "target analysis",
+        "asset discovery",
+        "directory scan",
+        "probe",
+        "explore",
         "investigate",
         "enumerate",
-        "全面分析",
-        "深度分析",
-        "详细分析",
-        "全面扫描",
-        "子域名",
+        "comprehensive analysis",
+        "deep analysis",
+        "detailed analysis",
+        "full scan",
         "subdomain",
     ]
 
     # Single-step queries should NOT trigger auto mode
     single_step_keywords = [
-        "生成报告",
+        "generate report",
         "report",
         "help",
-        "帮助",
     ]
 
     # If it's clearly a single-step query, don't auto-loop
@@ -2219,16 +2206,16 @@ def _should_auto_pentest(user_input: str, current_target: Optional[str]) -> bool
     has_target = bool(current_target) or bool(_extract_target_from_input(user_input))
     if has_target:
         multi_step_indicators = [
-            "并",
-            "然后",
-            "输出",
-            "保存",
-            "写到",
-            "导出",
-            "所有",
-            "全部",
-            "完整",
-            "详细",
+            " and ",
+            "then",
+            "output",
+            "save",
+            "write to",
+            "export",
+            "all ",
+            "entire",
+            "complete",
+            "detailed",
         ]
         if any(ind in input_lower for ind in multi_step_indicators):
             return True
@@ -2274,7 +2261,7 @@ def _auto_save_recon_report(agent, user_input: str, config) -> None:
         # Determine output path
         # Check if user specified a path
         path_match = re.search(
-            r"(?:保存到|写到|输出到|导出到|save to|write to|output to|export to)\s*([^\s,，]+)",
+            r"(?:save to|write to|output to|export to)\s*([^\s,]+)",
             user_input,
             re.IGNORECASE,
         )

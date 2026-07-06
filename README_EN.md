@@ -69,17 +69,32 @@ Suitable for authorized pentests, CTF competitions, security training, and red t
 
 ## Quick Start
 
+> **English build — install from source.** This fork runs entirely in English
+> (prompts, CLI/TUI, reports, and the agent's replies). Those changes live in
+> this repository, **not** on PyPI — the published `pip install vulnclaw`
+> package is the upstream Chinese-language version. To get the English build,
+> use the "Install from source" steps below.
+
 ### Installation
 
 ```bash
-# Install from PyPI (recommended)
-pip install vulnclaw
-
-# Install from source
+# Install from source (recommended — this is the English build)
 git clone https://github.com/Unclecheng-li/VulnClaw.git
 cd VulnClaw
 pip install -e .
+
+# Optional extras
+pip install -e ".[kb]"    # ChromaDB semantic knowledge base
+pip install -e ".[web]"   # Web UI dependencies
 ```
+
+```bash
+# Install from PyPI (NOTE: upstream Chinese-language version, not this English build)
+pip install vulnclaw
+```
+
+Requires Python 3.10+ (tested on 3.12). After installing, the `vulnclaw`
+command is available on your PATH.
 
 ### Run with Docker (optional)
 

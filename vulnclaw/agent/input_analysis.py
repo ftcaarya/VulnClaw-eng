@@ -11,56 +11,58 @@ from vulnclaw.agent.context import PentestPhase, TaskConstraints
 def detect_phase(user_input: str) -> Optional[PentestPhase]:
     """Detect pentest phase from user input using keyword matching."""
     input_lower = user_input.lower()
+    # Note: order matters — checked top to bottom, first keyword match wins.
+    # POST_EXPLOITATION is placed before EXPLOITATION so "post-exploitation"
+    # (which contains "exploit") resolves to the post-exploitation phase.
     phase_keywords = {
         PentestPhase.RECON: [
-            "信息收集",
-            "侦察",
-            "端口扫描",
-            "子域名",
-            "指纹",
-            "目录扫描",
+            "information gathering",
             "recon",
+            "reconnaissance",
+            "port scan",
+            "subdomain",
+            "fingerprint",
+            "directory scan",
             "scan",
-            "端口",
             "nmap",
-            "收集",
+            "gather",
         ],
         PentestPhase.VULN_DISCOVERY: [
-            "漏洞发现",
-            "漏洞扫描",
-            "有什么漏洞",
+            "vulnerability discovery",
+            "vuln scan",
+            "what vulnerabilities",
             "cve",
-            "安全检测",
+            "security check",
             "vulnerability",
-            "漏洞",
-            "注入",
+            "vuln",
+            "injection",
             "xss",
             "sqli",
         ],
+        PentestPhase.POST_EXPLOITATION: [
+            "post-exploitation",
+            "post exploitation",
+            "internal network",
+            "lateral",
+            "privilege escalation",
+            "persistence",
+            "pivot",
+            "tunnel",
+            "proxy",
+        ],
         PentestPhase.EXPLOITATION: [
-            "利用",
             "exploit",
+            "exploitation",
             "poc",
-            "验证漏洞",
-            "执行命令",
+            "verify vuln",
+            "execute command",
             "rce",
             "getshell",
-            "拿权限",
-            "打一下",
-            "尝试",
+            "get access",
+            "pop it",
+            "attempt",
         ],
-        PentestPhase.POST_EXPLOITATION: [
-            "后渗透",
-            "内网",
-            "横向",
-            "提权",
-            "维持",
-            "pivot",
-            "post-exploitation",
-            "隧道",
-            "代理",
-        ],
-        PentestPhase.REPORTING: ["报告", "report", "总结", "整理", "生成报告"],
+        PentestPhase.REPORTING: ["report", "summary", "summarize", "consolidate", "generate report"],
     }
     for phase, keywords in phase_keywords.items():
         if any(keyword in input_lower for keyword in keywords):
@@ -92,7 +94,7 @@ def extract_task_constraints(user_input: str) -> TaskConstraints:
     detected_target = detect_target(text)
 
     allowed_port_patterns = [
-        r"(?:只测|仅测|只测试|仅测试|仅允许测试|只允许测试)\s*(\d{1,5})(?:\s*端口)?",
+        r"(?:only\s+(?:test|scan)|only\s+allowed\s+to\s+(?:test|scan))\s+(?:port\s+)?(\d{1,5})",
         r"(?:only|just)\s+(?:test|scan)\s+(?:port\s+)?(\d{1,5})",
     ]
     for pattern in allowed_port_patterns:
@@ -102,7 +104,7 @@ def extract_task_constraints(user_input: str) -> TaskConstraints:
                 constraints.allowed_ports.append(port)
 
     blocked_group_patterns = [
-        r"(?:不要碰|不要测|禁止测试|禁止扫描|不要扫描)\s*([0-9,\s和及与、]+)(?:\s*端口)?",
+        r"(?:do not touch|don't touch|do not test|don't test|forbid testing|do not scan|don't scan)\s+((?:port\s+)?[0-9,\s and]+)",
     ]
     for pattern in blocked_group_patterns:
         for group in re.findall(pattern, text):
@@ -112,10 +114,10 @@ def extract_task_constraints(user_input: str) -> TaskConstraints:
                     constraints.blocked_ports.append(port)
 
     if any(
-        token in lowered for token in ["仅做信息收集", "只做信息收集", "recon only", "only recon"]
+        token in lowered for token in ["recon only", "only recon", "only do recon", "only reconnaissance"]
     ):
         constraints.allowed_actions = ["recon"]
-    if any(token in lowered for token in ["不要利用", "禁止利用", "do not exploit", "no exploit"]):
+    if any(token in lowered for token in ["do not exploit", "don't exploit", "no exploit", "forbid exploit"]):
         constraints.blocked_actions.append("exploit")
 
     allow_match = re.search(r"only allowed actions:\s*([a-z_,\s-]+)", lowered)
@@ -136,7 +138,7 @@ def extract_task_constraints(user_input: str) -> TaskConstraints:
 
     if any(
         token in lowered
-        for token in ["只测这个路径", "仅测试这个路径", "只测试这个路径", "只测该路径"]
+        for token in ["only test this path", "only scan this path", "test only this path", "only this path"]
     ):
         path_match = re.search(r"https?://[^\s]+(/[^\s?#]*)", text)
         if not path_match:
@@ -188,23 +190,23 @@ def extract_task_constraints(user_input: str) -> TaskConstraints:
 def extract_user_vuln_hint(user_input: str) -> str:
     """Extract explicit vulnerability hints from user input."""
     vuln_keywords = [
-        "SQL注入",
+        "SQL injection",
         "SQLi",
         "XSS",
         "RCE",
-        "命令注入",
-        "文件包含",
-        "路径遍历",
+        "command injection",
+        "file inclusion",
+        "path traversal",
         "LFI",
         "RFI",
         "SSRF",
         "CSRF",
-        "弱口令",
-        "暴力破解",
-        "认证绕过",
-        "未授权",
-        "信息泄露",
-        "敏感信息泄露",
+        "weak password",
+        "brute force",
+        "auth bypass",
+        "unauthorized",
+        "information disclosure",
+        "sensitive information disclosure",
     ]
     user_lower = user_input.lower()
     found_vulns = [v for v in vuln_keywords if v.lower() in user_lower]
@@ -216,56 +218,56 @@ def extract_user_vuln_hint(user_input: str) -> str:
     vuln_str = "/".join(found_vulns[:3])
     if target:
         return (
-            f"【用户明确提示 — 第1轮】\n"
-            f"用户明确告诉你 【{target}】 存在 【{vuln_str}】 漏洞。\n"
+            f"[Explicit user hint — Round 1]\n"
+            f"The user explicitly tells you that [{target}] has a [{vuln_str}] vulnerability.\n"
             f"\n"
-            f"→ 你必须立即构造并发送 PoC 测试请求！\n"
-            f"→ 用 fetch 工具直接发送请求，观察真实响应！\n"
-            f"→ 不要先探索路径、不要先做信息收集，直接测漏洞！\n"
+            f"→ You must immediately construct and send a PoC test request!\n"
+            f"→ Use the fetch tool to send the request directly and observe the real response!\n"
+            f"→ Don't explore paths or do recon first — test the vulnerability directly!\n"
             f"\n"
             f"{get_payload_examples(found_vulns, target)}"
         )
     return (
-        f"【用户明确提示】\n"
-        f"用户要求你测试 【{vuln_str}】 漏洞。\n"
-        f"→ 立即基于已发现的目标信息构造 PoC 测试，不要先做额外信息收集！"
+        f"[Explicit user hint]\n"
+        f"The user asks you to test a [{vuln_str}] vulnerability.\n"
+        f"→ Immediately construct a PoC test based on the target info already found — don't do extra recon first!"
     )
 
 
 def get_payload_examples(found_vulns: list[str], target: str) -> str:
     """Return concrete PoC payload examples for the given vulnerability types."""
-    lines = ["【PoC payload 示例】"]
+    lines = ["[PoC payload examples]"]
     for vuln in found_vulns[:2]:
         if "SQL" in vuln:
             lines += [
-                "SQL注入测试（布尔盲注）:",
-                f"  GET {target}?id=1' AND 1=1--  → 观察响应长度",
-                f"  GET {target}?id=1' AND 1=2--  → 长度是否不同？",
-                "SQL注入测试（报错注入）:",
+                "SQL injection test (boolean blind):",
+                f"  GET {target}?id=1' AND 1=1--  → observe the response length",
+                f"  GET {target}?id=1' AND 1=2--  → is the length different?",
+                "SQL injection test (error-based):",
                 f"  GET {target}?id=1' AND EXTRACTVALUE(1,CONCAT(0x7e,version()))--",
             ]
         elif "XSS" in vuln:
             lines += [
-                "XSS测试:",
-                f"  GET {target}?q=<script>alert(1)</script>  → 页面是否回显该内容",
+                "XSS test:",
+                f"  GET {target}?q=<script>alert(1)</script>  → does the page echo the content?",
                 f"  GET {target}?q=<img src=x onerror=alert(1)>",
             ]
-        elif "RCE" in vuln or "命令注入" in vuln:
+        elif "RCE" in vuln or "command injection" in vuln:
             lines += [
-                "RCE/命令注入测试:",
-                f"  GET {target}?cmd=whoami  → 观察是否有命令输出",
-                f"  GET {target}?c=whoami  → 不同参数名都试",
+                "RCE / command injection test:",
+                f"  GET {target}?cmd=whoami  → check for command output",
+                f"  GET {target}?c=whoami  → try different parameter names",
             ]
-        elif "文件包含" in vuln or "路径遍历" in vuln:
+        elif "file inclusion" in vuln or "path traversal" in vuln:
             lines += [
-                "文件包含/路径遍历测试:",
-                f"  GET {target}?f=/etc/passwd  → 读取系统文件",
+                "File inclusion / path traversal test:",
+                f"  GET {target}?f=/etc/passwd  → read a system file",
                 f"  GET {target}?f=../../../../etc/passwd",
             ]
         elif "SSRF" in vuln:
             lines += [
-                "SSRF测试:",
-                f"  GET {target}?url=http://127.0.0.1  → 是否有响应",
+                "SSRF test:",
+                f"  GET {target}?url=http://127.0.0.1  → any response?",
                 f"  GET {target}?url=http://169.254.169.254/latest/meta-data/",
             ]
     return "\n".join(lines[:12])

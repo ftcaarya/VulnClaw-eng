@@ -211,98 +211,98 @@ class TestSkillDispatcher:
 
     def test_dispatch_pentest_flow(self):
         d = self._make_dispatcher()
-        skill = d.dispatch("对目标进行渗透测试")
+        skill = d.dispatch("penetration test the target")
         assert skill["name"] == "pentest-flow"
 
     def test_dispatch_recon(self):
         d = self._make_dispatcher()
-        skill = d.dispatch("信息收集 侦察目标")
+        skill = d.dispatch("information gathering recon the target")
         assert skill["name"] == "recon"
 
     def test_dispatch_vuln_discovery(self):
         d = self._make_dispatcher()
-        skill = d.dispatch("漏洞扫描发现漏洞")
+        skill = d.dispatch("vuln scan vulnerability discovery")
         assert skill["name"] == "vuln-discovery"
 
     def test_dispatch_exploitation(self):
         d = self._make_dispatcher()
-        skill = d.dispatch("exploit利用漏洞")
+        skill = d.dispatch("exploitation poc exploit")
         assert skill["name"] == "exploitation"
 
     def test_dispatch_post_exploitation(self):
         d = self._make_dispatcher()
-        skill = d.dispatch("后渗透post-exploitation")
+        skill = d.dispatch("post-exploitation")
         assert skill["name"] == "post-exploitation"
 
     def test_dispatch_reporting(self):
         d = self._make_dispatcher()
-        skill = d.dispatch("生成报告report")
+        skill = d.dispatch("generate report")
         assert skill["name"] == "reporting"
 
     def test_dispatch_waf_bypass(self):
         d = self._make_dispatcher()
-        skill = d.dispatch("绕过waf")
+        skill = d.dispatch("bypass waf")
         assert skill["name"] == "waf-bypass"
 
     def test_dispatch_web_pentest(self):
         d = self._make_dispatcher()
-        skill = d.dispatch("web渗透测试网站")
+        skill = d.dispatch("web pentest website testing")
         assert skill["name"] == "web-pentest"
 
     def test_dispatch_android_pentest(self):
         d = self._make_dispatcher()
-        skill = d.dispatch("安卓android apk测试")
+        skill = d.dispatch("android apk app testing")
         assert skill["name"] == "android-pentest"
 
     def test_dispatch_client_reverse(self):
         d = self._make_dispatcher()
-        skill = d.dispatch("逆向分析签名恢复")
+        skill = d.dispatch("reverse signature recovery client reverse")
         assert skill["name"] == "client-reverse"
 
     def test_dispatch_web_security_advanced(self):
         d = self._make_dispatcher()
-        skill = d.dispatch("sql注入xss测试")
+        skill = d.dispatch("sql injection xss")
         assert skill["name"] == "web-security-advanced"
 
     def test_dispatch_ai_mcp_security(self):
         d = self._make_dispatcher()
-        skill = d.dispatch("AI安全MCP安全评估")
+        skill = d.dispatch("ai security mcp security")
         assert skill["name"] == "ai-mcp-security"
 
     def test_dispatch_intranet(self):
         d = self._make_dispatcher()
-        skill = d.dispatch("内网横向移动域渗透")
+        skill = d.dispatch("intranet lateral movement domain pentest")
         assert skill["name"] == "intranet-pentest-advanced"
 
     def test_dispatch_pentest_tools(self):
         d = self._make_dispatcher()
-        skill = d.dispatch("nmap命令速查工具")
+        skill = d.dispatch("nmap command tool")
         assert skill["name"] == "pentest-tools"
 
     def test_dispatch_rapid_checklist(self):
         d = self._make_dispatcher()
-        skill = d.dispatch("快速XSS payload速查")
+        skill = d.dispatch("payload quick lookup cheat sheet")
         assert skill["name"] == "rapid-checklist"
 
     def test_dispatch_secknowledge_src(self):
         d = self._make_dispatcher()
-        skill = d.dispatch("SRC 漏洞挖掘 目标 https://example.com SQL注入 XSS 测试")
+        skill = d.dispatch("SRC vulnerability hunting target https://example.com SQL injection XSS test")
         assert skill["name"] == "secknowledge-skill"
 
     def test_dispatch_secknowledge_ai_gaarm(self):
         d = self._make_dispatcher()
-        skill = d.dispatch("GAARM AI应用安全测试 Prompt注入 MCP Agent 风险映射")
+        skill = d.dispatch("GAARM ai app security testing owasp llm risk mapping")
         assert skill["name"] == "secknowledge-skill"
 
     def test_dispatch_default_to_pentest_flow(self):
         """Unrecognized input should default to pentest-flow."""
         d = self._make_dispatcher()
-        skill = d.dispatch("你好今天天气怎么样")
+        skill = d.dispatch("hello how is the weather today")
         assert skill["name"] == "pentest-flow"
 
     def test_dispatch_returns_dict(self):
         d = self._make_dispatcher()
-        skill = d.dispatch("渗透测试")
+        skill = d.dispatch("penetration test")
         assert isinstance(skill, dict)
         assert "name" in skill
         assert "content" in skill
@@ -313,25 +313,25 @@ class TestSkillDispatcher:
         d = self._make_dispatcher()
         # "内网" could match post-exploitation (core) or intranet-pentest-advanced (specialized)
         # With the 1.5x boost, specialized should win for specific intranet keywords
-        skill = d.dispatch("内网渗透横向移动")
+        skill = d.dispatch("intranet pentest lateral movement")
         assert skill["name"] == "intranet-pentest-advanced"
 
     def test_dispatch_case_insensitive(self):
         """Dispatch should be case-insensitive."""
         d = self._make_dispatcher()
-        skill1 = d.dispatch("SQL注入")
-        skill2 = d.dispatch("sql注入")
+        skill1 = d.dispatch("SQL injection")
+        skill2 = d.dispatch("sql injection")
         assert skill1["name"] == skill2["name"]
 
     def test_dispatch_crypto_toolkit(self):
         """Crypto-related inputs should dispatch to crypto-toolkit."""
         d = self._make_dispatcher()
-        skill = d.dispatch("帮我base64解码")
+        skill = d.dispatch("help me base64 decode")
         assert skill["name"] == "crypto-toolkit"
 
     def test_dispatch_crypto_hash(self):
         d = self._make_dispatcher()
-        skill = d.dispatch("MD5哈希加密")
+        skill = d.dispatch("MD5 hash")
         assert skill["name"] == "crypto-toolkit"
 
 
@@ -417,7 +417,7 @@ class TestCryptoTools:
 
         result = execute("unknown_op", "test")
         assert result["success"] is False
-        assert "未知操作" in result["error"]
+        assert "Unknown operation" in result["error"]
 
     def test_unicode_decode(self):
         from vulnclaw.skills.crypto_tools import execute

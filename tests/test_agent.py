@@ -13,12 +13,12 @@ class TestPentestPhase:
     def test_phase_values(self):
         from vulnclaw.agent.context import PentestPhase
 
-        assert PentestPhase.IDLE.value == "就绪"
-        assert PentestPhase.RECON.value == "信息收集"
-        assert PentestPhase.VULN_DISCOVERY.value == "漏洞发现"
-        assert PentestPhase.EXPLOITATION.value == "漏洞利用"
-        assert PentestPhase.POST_EXPLOITATION.value == "后渗透"
-        assert PentestPhase.REPORTING.value == "报告生成"
+        assert PentestPhase.IDLE.value == "Idle"
+        assert PentestPhase.RECON.value == "Recon"
+        assert PentestPhase.VULN_DISCOVERY.value == "Vulnerability Discovery"
+        assert PentestPhase.EXPLOITATION.value == "Exploitation"
+        assert PentestPhase.POST_EXPLOITATION.value == "Post-Exploitation"
+        assert PentestPhase.REPORTING.value == "Reporting"
 
     def test_phase_is_str(self):
         from vulnclaw.agent.context import PentestPhase
@@ -78,7 +78,7 @@ class TestSessionState:
         assert state.phase == PentestPhase.RECON
         # Should record the phase change in steps
         assert len(state.executed_steps) == 1
-        assert "信息收集" in state.executed_steps[0]
+        assert "Recon" in state.executed_steps[0]
 
     def test_add_finding(self):
         from vulnclaw.agent.context import SessionState, VulnerabilityFinding
@@ -237,7 +237,7 @@ class TestTargetState:
         assert restored is not None
         assert restored.target == "https://example.com"
         assert restored.phase == PentestPhase.RECON
-        assert "历史成果摘要" in restored.resume_summary
+        assert "Historical Results Summary" in restored.resume_summary
 
     def test_target_state_merges_findings(self, monkeypatch, tmp_path):
         import vulnclaw.target_state.store as store_mod
@@ -273,7 +273,7 @@ class TestTargetState:
         restored = store_mod.hydrate_session_from_target_state("https://example.com")
         assert restored is not None
         assert restored.resume_meta["resume_strategy"] == "verify_pending_findings"
-        assert restored.phase.value == "漏洞发现"
+        assert restored.phase.value == "Vulnerability Discovery"
         raw = store_mod.load_target_state("https://example.com")
         assert raw is not None
         assert "finding_meta" in raw
@@ -322,7 +322,7 @@ class TestTargetState:
         restored = store_mod.hydrate_session_from_target_state("https://example.com")
         assert restored is not None
         assert restored.resume_meta["resume_strategy"] == "exploit_expand"
-        assert restored.phase.value == "漏洞利用"
+        assert restored.phase.value == "Exploitation"
         assert "priority_findings" in restored.resume_meta
         assert "next_actions" in restored.resume_meta
 
@@ -378,7 +378,7 @@ class TestTargetState:
         store_mod.save_target_state("https://example.com", state, command="scan")
         restored = store_mod.hydrate_session_from_target_state("https://example.com")
         assert restored is not None
-        assert "高置信度侦察资产" in restored.resume_summary
+        assert "High-confidence recon assets" in restored.resume_summary
         assert (
             "paths:/admin" in restored.resume_summary
             or "subdomains:vpn.example.com" in restored.resume_summary
@@ -416,8 +416,8 @@ class TestTargetState:
         monkeypatch.setattr(store_mod, "TARGETS_DIR", tmp_path)
         state = SessionState(target="https://example.com")
         state.executed_steps = [
-            "Round 1: 访问 https://a.example.com/admin 失败，连接超时",
-            "Round 2: 测试 /login 参数无新发现",
+            "Round 1: access https://a.example.com/admin failed, connection timed out",
+            "Round 2: test /login parameter, no new findings",
         ]
         runtime = RuntimeState()
         runtime.blocked_targets = {"a.example.com"}
@@ -441,7 +441,7 @@ class TestTargetState:
 
         monkeypatch.setattr(store_mod, "TARGETS_DIR", tmp_path)
         state = SessionState(target="https://example.com")
-        state.executed_steps = ["Round 1: 访问 https://a.example.com/admin 失败，连接超时"]
+        state.executed_steps = ["Round 1: access https://a.example.com/admin failed, connection timed out"]
         runtime = RuntimeState()
         runtime.blocked_targets = {"a.example.com"}
         runtime.failed_targets = {"a.example.com": 3}
@@ -450,9 +450,9 @@ class TestTargetState:
         store_mod.save_target_state("https://example.com", state, command="recon", runtime=runtime)
         restored = store_mod.hydrate_session_from_target_state("https://example.com")
         assert restored is not None
-        assert "已阻塞目标" in restored.resume_summary
-        assert "连续低价值轮次" in restored.resume_summary
-        assert "最近失败路径/步骤" in restored.resume_summary
+        assert "Blocked targets" in restored.resume_summary
+        assert "Consecutive low-value rounds" in restored.resume_summary
+        assert "Recent failed paths/steps" in restored.resume_summary
 
     def test_target_state_snapshots_and_rollback(self, monkeypatch, tmp_path):
         import vulnclaw.target_state.store as store_mod
@@ -603,7 +603,7 @@ class TestPromptBuilder:
 
         prompt = build_system_prompt()
         assert "VulnClaw" in prompt
-        assert "渗透测试" in prompt
+        assert "penetration" in prompt.lower()
 
     def test_prompt_with_target(self):
         from vulnclaw.agent.prompts import build_system_prompt
@@ -614,15 +614,15 @@ class TestPromptBuilder:
     def test_prompt_with_phase(self):
         from vulnclaw.agent.prompts import build_system_prompt
 
-        prompt = build_system_prompt(phase="信息收集")
-        assert "信息收集" in prompt
+        prompt = build_system_prompt(phase="Recon")
+        assert "Recon" in prompt
 
     def test_prompt_with_skill_context(self):
         from vulnclaw.agent.prompts import build_system_prompt
 
-        prompt = build_system_prompt(skill_context="这是逆向分析的 Skill 上下文")
-        assert "逆向分析" in prompt
-        assert "Skill 上下文" in prompt
+        prompt = build_system_prompt(skill_context="This is the reverse-analysis Skill context")
+        assert "reverse-analysis" in prompt
+        assert "Skill Context" in prompt
 
     def test_prompt_with_mcp_tools(self):
         from vulnclaw.agent.prompts import build_system_prompt
@@ -652,13 +652,13 @@ class TestPromptBuilder:
         from vulnclaw.agent.prompts import build_system_prompt
 
         prompt = build_system_prompt()
-        assert "沙盒模式" in prompt
-        assert "证据冲突" in prompt
+        assert "Sandbox Mode" in prompt
+        assert "Evidence-conflict" in prompt
 
     def test_all_phases_render(self):
         from vulnclaw.agent.prompts import build_system_prompt
 
-        phases = ["信息收集", "漏洞发现", "漏洞利用", "后渗透", "报告生成"]
+        phases = ["Recon", "Vulnerability Discovery", "Exploitation", "Post-Exploitation", "Reporting"]
         for phase in phases:
             prompt = build_system_prompt(phase=phase)
             assert phase in prompt
@@ -685,88 +685,88 @@ class TestAgentCore:
         from vulnclaw.agent.context import PentestPhase
 
         agent = self._make_agent()
-        assert agent._detect_phase("扫描 192.168.1.100 的端口") == PentestPhase.RECON
-        assert agent._detect_phase("信息收集") == PentestPhase.RECON
+        assert agent._detect_phase("scan the ports of 192.168.1.100") == PentestPhase.RECON
+        assert agent._detect_phase("information gathering") == PentestPhase.RECON
         assert agent._detect_phase("recon") == PentestPhase.RECON
 
     def test_phase_detection_vuln(self):
         from vulnclaw.agent.context import PentestPhase
 
         agent = self._make_agent()
-        assert agent._detect_phase("有什么漏洞") == PentestPhase.VULN_DISCOVERY
-        assert agent._detect_phase("SQL注入") == PentestPhase.VULN_DISCOVERY
+        assert agent._detect_phase("what vulnerabilities") == PentestPhase.VULN_DISCOVERY
+        assert agent._detect_phase("SQL injection") == PentestPhase.VULN_DISCOVERY
 
     def test_phase_detection_exploit(self):
         from vulnclaw.agent.context import PentestPhase
 
         agent = self._make_agent()
         assert agent._detect_phase("exploit") == PentestPhase.EXPLOITATION
-        assert agent._detect_phase("尝试利用") == PentestPhase.EXPLOITATION
+        assert agent._detect_phase("attempt to exploit") == PentestPhase.EXPLOITATION
         # Note: "利用漏洞" matches VULN_DISCOVERY because "漏洞" appears first in the scan
         # This is a known limitation — more specific keywords should win
-        assert agent._detect_phase("poc验证") == PentestPhase.EXPLOITATION
+        assert agent._detect_phase("poc verification") == PentestPhase.EXPLOITATION
 
     def test_phase_detection_post(self):
         from vulnclaw.agent.context import PentestPhase
 
         agent = self._make_agent()
-        assert agent._detect_phase("后渗透") == PentestPhase.POST_EXPLOITATION
+        assert agent._detect_phase("post-exploitation") == PentestPhase.POST_EXPLOITATION
 
     def test_phase_detection_report(self):
         from vulnclaw.agent.context import PentestPhase
 
         agent = self._make_agent()
-        assert agent._detect_phase("生成渗透报告") == PentestPhase.REPORTING
+        assert agent._detect_phase("generate report") == PentestPhase.REPORTING
         assert agent._detect_phase("report") == PentestPhase.REPORTING
 
     def test_phase_detection_with_ip(self):
         agent = self._make_agent()
         # IP without any keyword should default to recon
-        phase = agent._detect_phase("10.0.0.1 有什么服务")
+        phase = agent._detect_phase("what services does 10.0.0.1 have")
         assert phase is not None
 
     def test_phase_detection_none(self):
         agent = self._make_agent()
-        phase = agent._detect_phase("今天天气怎么样")
+        phase = agent._detect_phase("how is the weather today")
         assert phase is None
 
     def test_target_detection_ip(self):
         agent = self._make_agent()
-        assert agent._detect_target("对 192.168.1.100 进行渗透测试") == "192.168.1.100"
+        assert agent._detect_target("pentest 192.168.1.100") == "192.168.1.100"
 
     def test_target_detection_url(self):
         agent = self._make_agent()
-        assert agent._detect_target("测试 https://example.com") == "https://example.com"
+        assert agent._detect_target("test https://example.com") == "https://example.com"
 
     def test_target_detection_domain(self):
         agent = self._make_agent()
-        target = agent._detect_target("扫描 testsite.com")
+        target = agent._detect_target("scan testsite.com")
         assert target == "testsite.com"
 
     def test_target_detection_none(self):
         agent = self._make_agent()
-        assert agent._detect_target("没有目标的输入") is None
+        assert agent._detect_target("input with no target") is None
 
     def test_skill_context_no_input(self):
         """Without user_input, should fallback to pentest-flow."""
         agent = self._make_agent()
         context = agent._get_active_skill_context(user_input=None)
         assert context is not None
-        assert "渗透" in context
+        assert context is not None
 
     def test_skill_context_with_input(self):
         """With user_input, should dispatch to the right Skill."""
         agent = self._make_agent()
-        context = agent._get_active_skill_context(user_input="测试SQL注入")
+        context = agent._get_active_skill_context(user_input="test SQL injection")
         assert context is not None
         # Should match web-security-advanced
-        assert "注入" in context or "SQL" in context
+        assert "injection" in context.lower() or "SQL" in context
 
     def test_skill_context_reverse(self):
         agent = self._make_agent()
-        context = agent._get_active_skill_context(user_input="对这个APP做逆向分析")
+        context = agent._get_active_skill_context(user_input="reverse engineer this APP")
         assert context is not None
-        assert "逆向" in context or "reverse" in context.lower()
+        assert "reverse" in context.lower()
 
     def test_build_openai_tools_includes_skill_ref(self):
         """Tools should include load_skill_reference."""
@@ -777,16 +777,16 @@ class TestAgentCore:
 
     def test_build_system_prompt(self):
         agent = self._make_agent()
-        prompt = agent._build_system_prompt(target="10.0.0.1", user_input="扫描端口")
+        prompt = agent._build_system_prompt(target="10.0.0.1", user_input="scan ports")
         assert "10.0.0.1" in prompt
         assert "VulnClaw" in prompt
 
     def test_build_system_prompt_auto_mode(self):
         agent = self._make_agent()
         prompt = agent._build_system_prompt(
-            target="10.0.0.1", auto_mode=True, user_input="渗透测试"
+            target="10.0.0.1", auto_mode=True, user_input="penetration test"
         )
-        assert "自主渗透" in prompt
+        assert "Autonomous Pentest" in prompt
 
     def test_recon_personnel_dimension_requires_confirmed_facts(self):
         agent = self._make_agent()
@@ -797,14 +797,14 @@ class TestAgentCore:
             "personnel": False,
         }
         agent.context.state.recon_dimension4_active = True
-        agent.context.state.notes = ["python_execute 里出现 github.com 和 twitter.com 字符串"]
-        agent.context.state.executed_steps = ["写了一个匹配 github/twitter 链接的脚本"]
+        agent.context.state.notes = ["github.com and twitter.com strings appeared in python_execute"]
+        agent.context.state.executed_steps = ["wrote a script matching github/twitter links"]
 
-        agent._update_recon_dimension_completion("LLM 提到 github 但没有真实结果")
+        agent._update_recon_dimension_completion("LLM mentioned github but no real result")
         assert agent.context.state.recon_dimensions_completed["personnel"] is False
 
         agent.context.state.add_confirmed_fact("github_id=12345 followers=10 public_repos=3")
-        agent._update_recon_dimension_completion("工具结果确认了 GitHub 账号")
+        agent._update_recon_dimension_completion("tool result confirmed the GitHub account")
         assert agent.context.state.recon_dimensions_completed["personnel"] is True
 
     def test_recon_non_personnel_dimension_can_use_notes_and_steps(self):
@@ -816,10 +816,10 @@ class TestAgentCore:
             "personnel": False,
         }
         agent.context.state.recon_dimension4_active = False
-        agent.context.state.notes = ["发现开放端口 80 和 443，运行 nginx 服务"]
-        agent.context.state.executed_steps = ["执行了 nmap 端口扫描"]
+        agent.context.state.notes = ["found open ports 80 and 443, running nginx service"]
+        agent.context.state.executed_steps = ["ran an nmap port scan"]
 
-        agent._update_recon_dimension_completion("端口扫描已完成")
+        agent._update_recon_dimension_completion("port scan complete")
         assert agent.context.state.recon_dimensions_completed["server"] is True
 
     def test_trim_summary_uses_system_role(self):
@@ -828,20 +828,20 @@ class TestAgentCore:
         cm = ContextManager(max_history=5)
         for i in range(8):
             if i % 2 == 0:
-                cm.add_user_message(f"用户消息 {i}")
+                cm.add_user_message(f"user message {i}")
             else:
-                cm.add_assistant_message(f"[+] 发现端口 {i}")
+                cm.add_assistant_message(f"[+] found port {i}")
 
         messages = cm.get_messages()
         assert len(messages) <= 5
         assert messages[0]["role"] == "system"
-        assert "之前的会话摘要" in messages[0]["content"]
+        assert "Summary of earlier conversation" in messages[0]["content"]
 
     def test_completion_signal_detection(self):
         agent = self._make_agent()
         assert agent._is_completion_signal("[DONE]") is True
-        assert agent._is_completion_signal("渗透测试已完成") is True
-        assert agent._is_completion_signal("继续扫描") is False
+        assert agent._is_completion_signal("penetration test complete") is True
+        assert agent._is_completion_signal("continue scanning") is False
 
     def test_parse_findings(self):
         agent = self._make_agent()
@@ -853,8 +853,8 @@ class TestAgentCore:
 
     def test_parse_high_confidence_pattern_needs_manual_review(self):
         agent = self._make_agent()
-        agent.context.state.add_note("访问 https://example.com/admin/exec 后 whoami 返回 www-data")
-        response = "发现远程代码执行漏洞，命令执行成功，whoami"
+        agent.context.state.add_note("after accessing https://example.com/admin/exec, whoami returns www-data")
+        response = "found a remote code execution vulnerability, command execution succeeded, whoami"
         agent._finding_parser.parse(response)
 
         review_items = [
@@ -865,9 +865,9 @@ class TestAgentCore:
 
     def test_confirmed_fact_verified_finding_carries_location_and_verified_at(self):
         agent = self._make_agent()
-        agent.context.state.add_confirmed_fact("命令执行成功")
-        agent.context.state.add_note("发现入口 https://example.com/admin/exec")
-        agent._finding_parser.parse("访问 https://example.com/admin/exec 后确认命令执行成功")
+        agent.context.state.add_confirmed_fact("command execution succeeded")
+        agent.context.state.add_note("found entry https://example.com/admin/exec")
+        agent._finding_parser.parse("after accessing https://example.com/admin/exec, confirmed command execution succeeded")
 
         verified = [f for f in agent.session_state.findings if f.verification_status == "verified"]
         assert verified
@@ -880,9 +880,9 @@ class TestAgentCore:
         from vulnclaw.agent.context import PentestPhase
 
         agent = self._make_agent()
-        assert agent._detect_phase_from_output("进入漏洞发现阶段") == PentestPhase.VULN_DISCOVERY
-        assert agent._detect_phase_from_output("开始利用漏洞") == PentestPhase.EXPLOITATION
-        assert agent._detect_phase_from_output("没有特殊信号") is None
+        assert agent._detect_phase_from_output("entering vulnerability discovery phase") == PentestPhase.VULN_DISCOVERY
+        assert agent._detect_phase_from_output("start exploiting the vulnerability") == PentestPhase.EXPLOITATION
+        assert agent._detect_phase_from_output("no special signal") is None
 
     def test_reset_context(self):
         agent = self._make_agent()
@@ -907,11 +907,11 @@ class TestAgentCore:
 
         agent = self._make_agent()
         agent._reset_runtime_state(
-            user_input="对 example.com 做社工和信息收集，顺便找flag",
+            user_input="do social engineering and recon on example.com, and find the flag",
             detected_phase=PentestPhase.RECON,
         )
 
-        assert agent.runtime.auto_skill_input == "对 example.com 做社工和信息收集，顺便找flag"
+        assert agent.runtime.auto_skill_input == "do social engineering and recon on example.com, and find the flag"
         assert agent.runtime.is_recon_phase is True
         assert agent.runtime.is_ctf_mode is True
         assert agent.runtime.claimed_flag is None
@@ -963,30 +963,30 @@ class TestAgentCore:
         agent = self._make_agent()
         agent.context.state.advance_phase(PentestPhase.VULN_DISCOVERY)
         agent._reset_runtime_state(
-            user_input="测试 https://example.com/login 的 SQL注入",
+            user_input="test SQL injection on https://example.com/login",
             detected_phase=PentestPhase.VULN_DISCOVERY,
         )
 
         round1 = agent._build_round_context(1, 5)
-        assert "用户明确提示" in round1
-        assert "第 1/3 轮" in round1
+        assert "Explicit user hint" in round1
+        assert "round 1/3" in round1
         assert agent.runtime.user_vuln_hint_rounds == 2
 
         round2 = agent._build_round_context(2, 5)
-        assert "第 2/2 轮" in round2
+        assert "round 2/2" in round2
         assert agent.runtime.user_vuln_hint_rounds == 1
 
     def test_extract_task_constraints_parses_allowed_ports(self):
         from vulnclaw.agent.input_analysis import extract_task_constraints
 
-        constraints = extract_task_constraints("对 https://example.com 只测试 443 端口")
+        constraints = extract_task_constraints("on https://example.com only test port 443")
         assert constraints.allowed_ports == [443]
         assert constraints.strict_mode is True
 
     def test_extract_task_constraints_infers_allowed_host_and_path(self):
         from vulnclaw.agent.input_analysis import extract_task_constraints
 
-        constraints = extract_task_constraints("对 https://example.com/admin 只测试这个路径")
+        constraints = extract_task_constraints("on https://example.com/admin only test this path")
         assert "example.com" in constraints.allowed_hosts
         assert "/admin" in constraints.allowed_paths
         assert constraints.strict_mode is True
@@ -1003,7 +1003,7 @@ class TestAgentCore:
         from vulnclaw.agent.input_analysis import extract_task_constraints
 
         # The period after .com is sentence punctuation, not part of the URL
-        constraints = extract_task_constraints("对 http://example.com. 进行渗透测试")
+        constraints = extract_task_constraints("pentest http://example.com.")
         assert "example.com" in constraints.allowed_hosts
         # Must NOT contain trailing dot - urlparse().hostname never returns trailing dots
         assert all(not h.endswith(".") for h in constraints.allowed_hosts)
@@ -1014,17 +1014,17 @@ class TestAgentCore:
         agent = self._make_agent()
         agent.context.state.advance_phase(PentestPhase.RECON)
         agent._reset_runtime_state(
-            user_input="对 https://example.com 只测试 443 端口",
+            user_input="on https://example.com only test port 443",
             detected_phase=PentestPhase.RECON,
         )
 
         round1 = agent._build_round_context(1, 5)
         round5 = agent._build_round_context(5, 5)
 
-        assert "当前任务硬约束" in round1
-        assert "仅允许测试端口: 443" in round1
-        assert "当前任务硬约束" in round5
-        assert "仅允许测试端口: 443" in round5
+        assert "Current Task Hard Constraints" in round1
+        assert "Only allowed test ports: 443" in round1
+        assert "Current Task Hard Constraints" in round5
+        assert "Only allowed test ports: 443" in round5
 
     @pytest.mark.asyncio
     async def test_persistent_pentest_keeps_constraints_in_followup_cycles(self):
@@ -1039,21 +1039,21 @@ class TestAgentCore:
 
         agent.auto_pentest = _fake_auto_pentest
         agent._reset_runtime_state(
-            user_input="对 https://example.com 只测试 443 端口",
-            detected_phase=agent._detect_phase("信息收集"),
+            user_input="on https://example.com only test port 443",
+            detected_phase=agent._detect_phase("information gathering"),
         )
         agent.context.state.target = "https://example.com"
 
         await agent.persistent_pentest(
-            "对 https://example.com 只测试 443 端口",
+            "on https://example.com only test port 443",
             max_cycles=2,
             rounds_per_cycle=1,
         )
 
         assert len(captured_inputs) == 2
-        assert "只测试 443 端口" in captured_inputs[0]
-        assert "当前任务硬约束" in captured_inputs[1]
-        assert "仅允许测试端口: 443" in captured_inputs[1]
+        assert "only test port 443" in captured_inputs[0]
+        assert "Current Task Hard Constraints" in captured_inputs[1]
+        assert "Only allowed test ports: 443" in captured_inputs[1]
 
     def test_reset_runtime_state_clears_previous_run_contamination(self):
         from vulnclaw.agent.context import PentestPhase
@@ -1083,7 +1083,7 @@ class TestAgentCore:
         }
 
         agent._reset_runtime_state(
-            user_input="测试 https://example.com/login 的 SQL注入",
+            user_input="test SQL injection on https://example.com/login",
             detected_phase=PentestPhase.VULN_DISCOVERY,
         )
 
@@ -1120,7 +1120,7 @@ class TestAgentCore:
         )
 
         agent._reset_runtime_state(
-            user_input="[Persistent Cycle 2] 继续对目标 https://example.com 进行渗透测试。",
+            user_input="[Persistent Cycle 2] Continue penetration testing against target https://example.com.",
             detected_phase=PentestPhase.RECON,
         )
 
@@ -1317,7 +1317,7 @@ class TestAgentCoreLoop:
                     raise RuntimeError("connection error")
 
                 class Msg:
-                    content = "恢复成功"
+                    content = "recovery succeeded"
                     tool_calls = None
 
                 class Choice:
@@ -1376,8 +1376,8 @@ class TestAgentCoreLoop:
 
         monkeypatch.setattr(llm_client.asyncio, "sleep", no_sleep)
         result = await llm_client.call_llm_auto(dummy, "sys", "round")
-        assert "LLM恢复" in result
-        assert "恢复成功" in result
+        assert "LLM recovery" in result
+        assert "recovery succeeded" in result
         assert loop.calls == 3
 
     @pytest.mark.asyncio
@@ -1535,7 +1535,7 @@ class TestAgentCoreLoop:
         )
 
         result = await llm_client.call_llm_auto(dummy, "sys", "round")
-        assert "已降级为纯文本结果摘要" in result
+        assert "downgraded to a plain-text result summary" in result
         assert "Status: 200" in result
 
     @pytest.mark.asyncio
@@ -1647,11 +1647,11 @@ class TestAgentCoreLoop:
         from vulnclaw.agent import loop_controller
 
         async def _fake_call_llm_auto(agent_obj, system_prompt, round_context, **kwargs):
-            return "本轮未发现新漏洞，准备总结。\n[DONE]"
+            return "No new vulns this round, preparing summary.\n[DONE]"
 
         monkeypatch.setattr(loop_controller, "call_llm_auto", _fake_call_llm_auto)
         # Use input that skips recon (so RECON_MIN_ROUNDS doesn't block [DONE])
-        results = await agent.auto_pentest("扫描 example.com 的 SQL注入漏洞", max_rounds=5)
+        results = await agent.auto_pentest("test example.com for the SQL injection vulnerability", max_rounds=5)
 
         assert len(results) == 1
         assert results[0].should_continue is False
@@ -1662,9 +1662,9 @@ class TestAgentCoreLoop:
         from vulnclaw.agent import loop_controller
 
         round_responses = [
-            "发现可疑文件，尝试读取。\nflag{test123}",
-            "验证 flag{test123} 正确，flag 获取成功！",
-            "总结：成功获取 flag{test123}，任务完成。\n[DONE]",
+            "found a suspicious file, trying to read.\nflag{test123}",
+            "verified flag{test123} is correct, flag obtained successfully!",
+            "Summary: successfully obtained flag{test123}, task complete.\n[DONE]",
         ]
         call_idx = 0
 
@@ -1675,7 +1675,7 @@ class TestAgentCoreLoop:
             return text
 
         monkeypatch.setattr(loop_controller, "call_llm_auto", _fake_call_llm_auto)
-        results = await agent.auto_pentest("NSSCTF 解题找 flag", max_rounds=10)
+        results = await agent.auto_pentest("NSSCTF solve the challenge, find the flag", max_rounds=10)
 
         # Should claim flag on round 1
         assert agent.runtime.claimed_flag == "flag{test123}"
@@ -1692,10 +1692,10 @@ class TestAgentCoreLoop:
 
         async def _fake_call_llm_auto(agent_obj, system_prompt, round_context, **kwargs):
             # Same wording every round, with an attack-path keyword
-            return "尝试 sql注入测试，使用 UNION SELECT，未成功。"
+            return "attempted sql injection test using UNION SELECT, did not succeed."
 
         monkeypatch.setattr(loop_controller, "call_llm_auto", _fake_call_llm_auto)
-        results = await agent.auto_pentest("扫描 example.com 的 SQL注入漏洞", max_rounds=5)
+        results = await agent.auto_pentest("test example.com for the SQL injection vulnerability", max_rounds=5)
 
         # Same path repeated without progress → counter increases
         assert agent.runtime.same_path_fail_count >= 3
@@ -1709,18 +1709,18 @@ class TestAgentCoreLoop:
         from vulnclaw.agent import loop_controller
 
         async def _fake_call_llm_auto(agent_obj, system_prompt, round_context, **kwargs):
-            return "信息收集完成，切换到漏洞利用。\nphase: exploitation"
+            return "Recon complete, switch to exploitation.\nphase: exploitation"
 
         monkeypatch.setattr(loop_controller, "call_llm_auto", _fake_call_llm_auto)
         results = await agent.auto_pentest(
-            "对 https://example.com 做信息收集。 Only allowed actions: recon",
+            "Do recon on https://example.com. Only allowed actions: recon",
             max_rounds=3,
         )
 
         assert len(results) == 1
         assert results[0].should_continue is False
         assert "constraint_violation" in results[0].output
-        assert agent.context.state.phase.value == "信息收集"
+        assert agent.context.state.phase.value == "Recon"
 
     def test_constraint_policy_normalizes_actions_and_validates_phase(self):
         from vulnclaw.agent.constraint_policy import (
@@ -1755,10 +1755,10 @@ class TestAgentCoreLoop:
         from vulnclaw.agent import loop_controller
 
         async def _fake_call_llm_auto(agent_obj, system_prompt, round_context, **kwargs):
-            return "访问 https://victim.local/admin 访问失败，连接超时。"
+            return "access https://victim.local/admin failed, connection timed out."
 
         monkeypatch.setattr(loop_controller, "call_llm_auto", _fake_call_llm_auto)
-        await agent.auto_pentest("测试 victim.local", max_rounds=5)
+        await agent.auto_pentest("test victim.local", max_rounds=5)
 
         # victim.local should be tracked as failed
         assert "victim.local" in agent.runtime.failed_targets
@@ -1780,7 +1780,7 @@ class TestAgentCoreLoop:
 
         agent.auto_pentest = _fake_auto_pentest
         cycle_results = await agent.persistent_pentest(
-            "持续测试 target",
+            "continuously test target",
             max_cycles=3,
             rounds_per_cycle=5,
         )

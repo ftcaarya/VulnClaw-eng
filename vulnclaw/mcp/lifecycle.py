@@ -516,7 +516,7 @@ class MCPLifecycleManager:
                 if subs:
                     detail = "; ".join(str(s) for s in subs)
             if "already connected" in detail.lower():
-                detail += " (请重启 MCP 服务或关闭旧客户端连接)"
+                detail += " (restart the MCP service or close old client connections)"
             return False, detail, []
 
     def _probe_sse_server(
@@ -1638,9 +1638,9 @@ class MCPLifecycleManager:
             return result
 
         except ImportError:
-            return "[!] httpx 未安装，无法执行 fetch 请求"
+            return "[!] httpx not installed; cannot perform the fetch request"
         except Exception as e:
-            return f"[!] fetch 请求失败: {e}"
+            return f"[!] fetch request failed: {e}"
 
     async def _call_memory(self, tool_name: str, args: dict) -> str:
         """Execute a memory tool call (local implementation)."""
@@ -1650,11 +1650,11 @@ class MCPLifecycleManager:
 
         if tool_name == "save":
             store.save(args.get("key", ""), args.get("value", ""))
-            return f"[+] 已保存: {args.get('key', '')}"
+            return f"[+] Saved: {args.get('key', '')}"
         elif tool_name == "retrieve":
             value = store.retrieve(args.get("key", ""))
-            return str(value) if value else "[-] 未找到"
-        return "[!] 未知 memory 工具"
+            return str(value) if value else "[-] Not found"
+        return "[!] Unknown memory tool"
 
     async def _call_attached_server(
         self, server_name: str, tool_name: str, args: dict

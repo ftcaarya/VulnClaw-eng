@@ -9,33 +9,33 @@ from typing import Any, Optional
 
 INTENT_TOOL_MAP: dict[str, list[dict[str, Any]]] = {
     # Browser automation
-    "打开网页|访问url|访问页面|navigate": [
+    "open page|open url|visit url|visit page|navigate": [
         {"tool": "new_page", "server": "chrome-devtools"},
         {"tool": "navigate", "server": "chrome-devtools"},
     ],
-    "截图|screenshot|截屏": [
+    "screenshot|screen capture|capture screen": [
         {"tool": "screenshot", "server": "chrome-devtools"},
     ],
-    "执行js|eval js|运行javascript": [
+    "run js|eval js|run javascript|execute js": [
         {"tool": "evaluate_js", "server": "chrome-devtools"},
     ],
     # HTTP requests
-    "发请求|http请求|fetch|访问接口|调用api": [
+    "send request|http request|fetch|call endpoint|call api": [
         {"tool": "fetch", "server": "fetch"},
         {"tool": "send_http1_request", "server": "burp"},
     ],
     # Burp Suite
-    "抓包|查看请求|拦截请求|proxy": [
+    "capture packet|view request|intercept request|proxy": [
         {"tool": "get_proxy_http_history", "server": "burp"},
     ],
-    "修改数据包|重放|replay|篡改": [
+    "modify packet|replay|tamper": [
         {"tool": "send_http1_request", "server": "burp"},
     ],
     # Memory
-    "记住|记录|save memory": [
+    "remember|record|save memory": [
         {"tool": "save", "server": "memory"},
     ],
-    "回忆|查询记录|retrieve memory": [
+    "recall|query record|retrieve memory": [
         {"tool": "retrieve", "server": "memory"},
     ],
 }
@@ -79,19 +79,19 @@ class MCPRouter:
     def suggest_tools_for_phase(self, phase: str) -> list[dict[str, Any]]:
         """Suggest tools based on pentest phase."""
         phase_tools = {
-            "信息收集": [
-                {"tool": "fetch", "server": "fetch", "reason": "HTTP 请求探测目标"},
-                {"tool": "new_page", "server": "chrome-devtools", "reason": "浏览器访问目标"},
-                {"tool": "screenshot", "server": "chrome-devtools", "reason": "截图记录目标页面"},
+            "Recon": [
+                {"tool": "fetch", "server": "fetch", "reason": "HTTP request to probe the target"},
+                {"tool": "new_page", "server": "chrome-devtools", "reason": "Access the target in a browser"},
+                {"tool": "screenshot", "server": "chrome-devtools", "reason": "Screenshot the target page"},
             ],
-            "漏洞发现": [
-                {"tool": "fetch", "server": "fetch", "reason": "发送漏洞探测请求"},
-                {"tool": "send_http1_request", "server": "burp", "reason": "通过代理构造检测请求"},
+            "Vulnerability Discovery": [
+                {"tool": "fetch", "server": "fetch", "reason": "Send a vulnerability-probe request"},
+                {"tool": "send_http1_request", "server": "burp", "reason": "Construct a detection request via proxy"},
             ],
-            "漏洞利用": [
-                {"tool": "send_http1_request", "server": "burp", "reason": "构造利用请求"},
-                {"tool": "fetch", "server": "fetch", "reason": "发送利用 payload"},
-                {"tool": "evaluate_js", "server": "chrome-devtools", "reason": "浏览器内利用"},
+            "Exploitation": [
+                {"tool": "send_http1_request", "server": "burp", "reason": "Construct an exploitation request"},
+                {"tool": "fetch", "server": "fetch", "reason": "Send the exploitation payload"},
+                {"tool": "evaluate_js", "server": "chrome-devtools", "reason": "In-browser exploitation"},
             ],
         }
 

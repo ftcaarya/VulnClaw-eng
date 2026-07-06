@@ -29,9 +29,9 @@ class TestNormalizeText:
         assert "https://" not in out
 
     def test_noise_tags_removed(self):
-        out = normalize_text("[自动] SQL注入 [已确认]")
-        assert "[自动]" not in out
-        assert "[已确认]" not in out
+        out = normalize_text("[Auto] SQL injection [Confirmed]")
+        assert "[auto]" not in out
+        assert "[confirmed]" not in out
 
 
 # ── text_similarity ──────────────────────────────────────────────────
@@ -100,29 +100,29 @@ class TestUrlSimilarity:
 class TestNormalizeVulnType:
     def test_sqli_aliases(self):
         assert normalize_vuln_type("sqli") == "sql_injection"
-        assert normalize_vuln_type("SQL注入") == "sql_injection"
+        assert normalize_vuln_type("sql injection") == "sql_injection"
         assert normalize_vuln_type("SQL Injection") == "sql_injection"
         assert normalize_vuln_type("blind sqli") == "sql_injection"
 
     def test_xss_aliases(self):
         assert normalize_vuln_type("xss") == "cross_site_scripting"
-        assert normalize_vuln_type("跨站脚本") == "cross_site_scripting"
+        assert normalize_vuln_type("cross site scripting") == "cross_site_scripting"
 
     def test_ssrf(self):
         assert normalize_vuln_type("ssrf") == "server_side_request_forgery"
-        assert normalize_vuln_type("服务端请求伪造") == "server_side_request_forgery"
+        assert normalize_vuln_type("server side request forgery") == "server_side_request_forgery"
 
     def test_rce(self):
         assert normalize_vuln_type("rce") == "remote_code_execution"
-        assert normalize_vuln_type("命令执行") == "remote_code_execution"
+        assert normalize_vuln_type("command execution") == "remote_code_execution"
 
     def test_lfi(self):
         assert normalize_vuln_type("lfi") == "local_file_inclusion"
-        assert normalize_vuln_type("文件包含") == "local_file_inclusion"
+        assert normalize_vuln_type("file inclusion") == "local_file_inclusion"
 
     def test_idor(self):
         assert normalize_vuln_type("idor") == "insecure_direct_object_reference"
-        assert normalize_vuln_type("越权") == "insecure_direct_object_reference"
+        assert normalize_vuln_type("broken access control") == "insecure_direct_object_reference"
 
     def test_unknown_falls_back(self):
         assert normalize_vuln_type("Weird Custom Type") == "weird_custom_type"
@@ -153,9 +153,9 @@ class TestFindingSimilarity:
             description="login form vulnerable at https://t.com/api/login?u=1",
         )
         b = _mk(
-            "登录处 SQL 注入",
-            vuln_type="SQL注入",
-            description="https://t.com/api/login?u=2 注入漏洞",
+            "SQL injection at login",
+            vuln_type="SQL injection",
+            description="https://t.com/api/login?u=2 injection vulnerability",
         )
         # 类型归一化匹配 0.8*0.3 + URL 同接口 1.0*0.4 + 描述部分重叠
         assert finding_similarity(a, b) >= 0.6
@@ -193,9 +193,9 @@ class TestDeduplicateFindings:
                 description="https://t.com/api/login?u=1 vulnerable",
             ),
             _mk(
-                "登录处 SQL 注入",
-                vuln_type="SQL注入",
-                description="https://t.com/api/login?u=2 注入",
+                "SQL injection at login",
+                vuln_type="SQL injection",
+                description="https://t.com/api/login?u=2 injection",
             ),
         ]
         result = deduplicate_findings(findings, threshold=0.6)
@@ -249,9 +249,9 @@ class TestSessionStateIntegration:
             description="https://t.com/api/login?u=1 vulnerable",
         )
         f2 = _mk(
-            "登录处 SQL 注入",
-            vuln_type="SQL注入",
-            description="https://t.com/api/login?u=2 注入",
+            "SQL injection at login",
+            vuln_type="SQL injection",
+            description="https://t.com/api/login?u=2 injection",
         )
         state.semantic_dedup_threshold = 0.6
         assert state.add_finding(f1) is True

@@ -27,64 +27,64 @@ FRONTIER_RECOVERY_LIMIT = 2
 
 # 探索阶段判定「已推进/已确认结论」的信号（宽泛匹配，避免漏判有进展的 intent）
 _ADVANCE_MARKERS = [
-    "确认",
-    "成功",
-    "拿到",
-    "获取到",
-    "提取到",
+    "confirmed",
+    "success",
+    "obtained",
+    "extracted",
     "flag{",
     "flag ",
-    "绕过成功",
-    "回显",
-    "漏洞存在",
-    "发现",
-    "返回200",
-    "返回 200",
+    "bypass succeeded",
+    "echo",
+    "vulnerability exists",
+    "found",
+    "returns 200",
+    "returned 200",
     "status: 200",
-    "未授权",
-    "无需认证",
-    "接口可访问",
-    "信息泄露",
-    "关键发现",
-    "重大发现",
-    "暴露",
-    "泄露",
+    "unauthorized",
+    "no auth required",
+    "endpoint accessible",
+    "information disclosure",
+    "key finding",
+    "major finding",
+    "exposed",
+    "leak",
     "200 ok",
     "cors",
-    "可写入",
-    "可上传",
-    "可下载",
-    "弱口令",
-    "注入点",
+    "writable",
+    "uploadable",
+    "downloadable",
+    "weak password",
+    "injection point",
     "xss",
     "sql inject",
 ]
-# 探索阶段判定「该方向走不通」的信号
+# Signals that a direction is a dead end during exploration
 _DEAD_END_MARKERS = [
-    "不存在",
-    "无法",
-    "失败",
-    "走不通",
-    "没有发现",
-    "无注入",
-    "无回显",
-    "排除",
+    "does not exist",
+    "unable",
+    "failed",
+    "dead end",
+    "nothing found",
+    "no injection",
+    "no echo",
+    "excluded",
 ]
-# 完成理由里的否定表述——模型把「未达成」写进完成字段时据此识别并拒绝
+# Negation phrasing in a completion reason — when the model writes "not achieved" into the
+# completion field, recognize and reject it
 _NEGATION_MARKERS = [
-    "未达到",
-    "未达成",
-    "未记录",
-    "未发现",
-    "未完成",
-    "未能",
-    "尚未",
-    "没有",
-    "不足以",
-    "无法证明",
-    "无法确认",
-    "不能证明",
-    "不满足",
+    "not reached",
+    "not achieved",
+    "not recorded",
+    "not found",
+    "not complete",
+    "could not",
+    "not yet",
+    "none",
+    "insufficient",
+    "cannot prove",
+    "cannot confirm",
+    "unable to prove",
+    "not satisfied",
 ]
 
 
@@ -186,7 +186,7 @@ def _extract_flags(text: str) -> list[str]:
 
 def _goal_wants_flag(goal: str) -> bool:
     g = (goal or "").lower()
-    return any(k in g for k in ("flag", "夺旗", "ctf", "shell", "getshell"))
+    return any(k in g for k in ("flag", "capture the flag", "ctf", "shell", "getshell"))
 
 
 def _unverified_flags(claim: str, evidence: str) -> list[str]:
@@ -200,7 +200,7 @@ def _completion_is_grounded(goal: str, evidence: str) -> tuple[bool, str]:
         return True, ""
     if _extract_flags(evidence):
         return True, ""
-    return False, "目标要求 flag，但任何真实工具输出中都没有出现 flag，判定为未验证/疑似幻觉"
+    return False, "The goal requires a flag, but no flag appeared in any real tool output; judged unverified / suspected hallucination"
 
 
 def _extract_json(text: str) -> Optional[dict]:
@@ -258,22 +258,22 @@ def _reason_prompt(board: Blackboard, max_intents: int) -> str:
 
     open_block = ""
     if open_list:
-        open_block = "当前处于 OPEN 状态的 intents（正在探索或等待探索）：\n"
+        open_block = "Intents currently in the OPEN state (being explored or awaiting exploration):\n"
         for i in open_list:
             open_block += f"  - {i.id}: {i.description}\n"
-        open_block += "如果 open intents 已覆盖所有有价值的方向，不要提新的。\n\n"
+        open_block += "If the open intents already cover all worthwhile directions, don't propose new ones.\n\n"
 
     abandoned_block = ""
     if abandoned:
-        abandoned_block = "已放弃的 intents（走不通或已验证过）：\n"
+        abandoned_block = "Abandoned intents (dead ends or already verified):\n"
         for i in abandoned[-10:]:
             note = f" — {i.note[:60]}" if i.note else ""
             abandoned_block += f"  - {i.id}: {i.description}{note}\n"
-        abandoned_block += "⚠ **严禁重复提出与上述 abandoned intents 相同或高度重叠的方向。** 它们已被验证为走不通。\n\n"
+        abandoned_block += "⚠ **Do not re-propose any direction identical or highly overlapping with the abandoned intents above.** They have been verified as dead ends.\n\n"
 
     concluded_block = ""
     if concluded:
-        concluded_block = "已完成的 intents（有结论的）：\n"
+        concluded_block = "Concluded intents (with a conclusion):\n"
         for i in concluded[-5:]:
             concluded_block += f"  - {i.id} → {i.result_fact}: {i.description}\n"
         concluded_block += "\n"
@@ -290,50 +290,51 @@ def _reason_prompt(board: Blackboard, max_intents: int) -> str:
         )
 
     return (
-        "你是该领域的资深渗透专家。下面是当前任务的「黑板图」快照：facts 是已确认的客观事实，"
-        "intents 是探索方向。图从 facts 出发、通过 intent 探索得到新的 fact，逐步逼近 goal。\n\n"
+        "You are a senior penetration-testing expert in this domain. Below is a snapshot of the current task's "
+        "\"blackboard graph\": facts are confirmed objective facts, intents are exploration directions. The graph "
+        "starts from facts and, through intent exploration, produces new facts, gradually approaching the goal.\n\n"
         f"{open_block}{abandoned_block}{concluded_block}{frontier_block}"
-        "请判断两件事：① 现有 facts 是否已满足 goal；② 若未满足，是否应提出新的探索方向。\n\n"
-        "只返回一个 JSON 对象，不要输出别的内容：\n"
-        '- 若 goal 已达成： {"complete": true, "reason": "说明为何已达成", "evidence": ["f002"]}'
-        "（complete 必须是布尔 true；evidence 必须引用证明达成的真实 fact id，至少一个）\n"
-        '- 若未达成且应提出新方向： {"complete": false, "intents": [{"from": ["f001"], "description": "高价值且独立的探索方向"}]}\n'
-        '- 若未达成但当前不必新增方向： {"complete": false}\n\n'
-        "规则：\n"
-        "- **complete 字段只能是布尔 true 或 false**。\n"
-        "- **完成判定必须基于 facts 里已确认的客观事实**，不得基于猜测或愿望，且 evidence 必须引用真实 fact id。\n"
-        "- 若某条 fact 标注了 [未验证]/[拒绝完成]/疑似幻觉，绝对不能据此判定达成。\n"
-        "- **严禁重复提出与 abandoned intents 相同或高度重叠的方向**——它们已被探索过且走不通。\n"
-        "- 若还有处于 open 的 intent 且当前 facts 没有揭示比 open intents 更有价值的新方向，"
-        "返回 {\"complete\": false}（不提新方向），让 open intents 继续推进。\n"
-        f"- 一次最多提出 {max_intents} 个高价值、互不重叠、可独立推进的方向，每个聚焦核心思路。\n"
-        "- description 简洁聚焦，不要冗长；不同 intent 覆盖不同维度。\n\n"
-        "## 黑板图\n```\n" + board.to_prompt_graph() + "\n```\n"
+        "Decide two things: (1) whether the existing facts already satisfy the goal; (2) if not, whether to propose new exploration directions.\n\n"
+        "Return only a single JSON object, nothing else:\n"
+        '- If the goal is achieved: {"complete": true, "reason": "why it is achieved", "evidence": ["f002"]}'
+        " (complete must be boolean true; evidence must reference real fact ids proving achievement, at least one)\n"
+        '- If not achieved and new directions should be proposed: {"complete": false, "intents": [{"from": ["f001"], "description": "a high-value, independent exploration direction"}]}\n'
+        '- If not achieved but no new directions are needed right now: {"complete": false}\n\n'
+        "Rules:\n"
+        "- **The complete field can only be boolean true or false**.\n"
+        "- **The completion judgment must be based on confirmed objective facts in `facts`**, not on guesses or wishes, and evidence must reference real fact ids.\n"
+        "- If a fact is marked [Unverified]/[completion rejected]/suspected hallucination, you must never judge the goal achieved based on it.\n"
+        "- **Do not re-propose any direction identical or highly overlapping with the abandoned intents** — they have been explored and are dead ends.\n"
+        "- If there are still open intents and the current facts do not reveal a more valuable new direction than the open intents, "
+        "return {\"complete\": false} (no new directions) and let the open intents continue.\n"
+        f"- Propose at most {max_intents} high-value, non-overlapping, independently advanceable directions at a time, each focused on a core idea.\n"
+        "- Keep descriptions concise and focused, not verbose; different intents should cover different dimensions.\n\n"
+        "## Blackboard graph\n```\n" + board.to_prompt_graph() + "\n```\n"
     )
 
 
 def _conclude_prompt(board: Blackboard, intent: BoardIntent, evidence: str) -> str:
     return (
-        "现在是「结论阶段」。它覆盖之前一切让你继续探索/继续发请求/继续等待结果的指令——立即停止动作，只做总结。\n"
-        "你只能基于「真实工具输出」里**已经实际确认**的信息来总结，不得继续调用工具、不得等待未完成的结果。\n\n"
-        "只返回一个 JSON 对象：\n"
-        '{"advanced": true/false, "fact": "本次新确认的客观事实（增量）"}\n\n'
-        "## advanced 判定标准（宽泛偏向 true）\n"
-        "advanced=true 的情况（有**任何一项**即算推进）：\n"
-        "- 发现了新的可访问接口/端点（即便只是确认 200 返回）\n"
-        "- 确认了未授权可访问的 API（无需 token 即返回数据）\n"
-        "- 发现了技术栈/版本/配置信息（Server 头、错误页泄露等）\n"
-        "- 发现了安全配置问题（CORS 通配符、缺失安全头、敏感路径 403 等）\n"
-        "- 确认了漏洞存在（注入点/XSS/SSRF/文件读取等）\n"
-        "- 获取到了真实的 flag/shell/凭据\n\n"
-        "advanced=false 仅当**完全没有任何新发现**：所有请求都是 404/超时/已知信息重复。\n\n"
-        "## 铁律\n"
-        "- fact 必须是**已被真实工具输出证实**的客观事实，不得是计划、猜测、推断。\n"
-        "- **严禁编造 flag/shell/密码/数据**——工具输出里没出现过就不能声称拿到。\n"
-        "- fact 只写增量信息，不要重复图里已有的内容。\n\n"
-        f"## 当前探索方向 {intent.id}\n{intent.description}\n\n"
-        "## 本次探索的真实工具输出（你唯一可信的事实来源）\n```\n" + (evidence.strip() or "(无工具输出)") + "\n```\n\n"
-        "## 黑板图\n```\n" + board.to_prompt_graph() + "\n```\n"
+        "This is the \"conclusion phase\". It overrides every earlier instruction telling you to keep exploring / keep sending requests / keep waiting for results — stop acting immediately and only summarize.\n"
+        "You may summarize only from information **already actually confirmed** in the \"real tool output\"; do not call more tools and do not wait for unfinished results.\n\n"
+        "Return only a single JSON object:\n"
+        '{"advanced": true/false, "fact": "the newly confirmed objective fact this time (incremental)"}\n\n'
+        "## advanced judgment criteria (broad, biased toward true)\n"
+        "Cases where advanced=true (**any one** counts as progress):\n"
+        "- Discovered a new accessible endpoint (even just confirming a 200 response)\n"
+        "- Confirmed an unauthorized-accessible API (returns data without a token)\n"
+        "- Discovered tech-stack/version/config info (Server header, error-page leak, etc.)\n"
+        "- Discovered a security-config issue (CORS wildcard, missing security headers, sensitive path 403, etc.)\n"
+        "- Confirmed a vulnerability exists (injection point/XSS/SSRF/file read, etc.)\n"
+        "- Obtained a real flag/shell/credential\n\n"
+        "advanced=false only when **there is absolutely no new finding**: all requests are 404/timeout/repeats of known info.\n\n"
+        "## Iron rules\n"
+        "- The fact must be an objective fact **confirmed by real tool output**, not a plan, guess, or inference.\n"
+        "- **Never fabricate a flag/shell/password/data** — if it never appeared in tool output, you cannot claim to have obtained it.\n"
+        "- The fact should contain only incremental info; do not repeat what's already in the graph.\n\n"
+        f"## Current exploration direction {intent.id}\n{intent.description}\n\n"
+        "## Real tool output from this exploration (your only trustworthy source of truth)\n```\n" + (evidence.strip() or "(no tool output)") + "\n```\n\n"
+        "## Blackboard graph\n```\n" + board.to_prompt_graph() + "\n```\n"
     )
 
 
@@ -342,46 +343,46 @@ def _explore_context(board: Blackboard, intent: BoardIntent, step: int, max_roun
     if intent.from_facts:
         refs = [board.get_fact(fid) for fid in intent.from_facts]
         from_desc = "\n".join(f"  - {f.id}: {f.description}" for f in refs if f)
-        from_desc = f"\n基于已知事实：\n{from_desc}"
+        from_desc = f"\nBased on known facts:\n{from_desc}"
 
-    # 已执行工具摘要——防跨 intent 重复
+    # Executed-tools summary — prevent cross-intent repetition
     tc_summary = board.tool_call_summary(20)
     tc_block = ""
     if tc_summary:
         tc_block = (
-            "\n## 已执行过的工具（禁止重复调用同一工具+同一参数）\n"
+            "\n## Already-executed tools (do not re-invoke the same tool + same args)\n"
             + tc_summary + "\n"
         )
 
-    # Cairn 改进 #5: 最后一步时注入 conclude override 指令
+    # Cairn improvement #5: inject a conclude-override instruction on the last step
     conclude_override = ""
     if step == max_rounds:
         conclude_override = (
-            "\n## ⚠ 这是最后一步——立即停止探索并总结\n"
-            "不要再发起新的工具调用、不要等待未完成的结果。\n"
-            "基于已有的工具输出，总结本方向发现的所有客观事实。\n\n"
+            "\n## ⚠ This is the last step — stop exploring immediately and summarize\n"
+            "Do not initiate new tool calls and do not wait for unfinished results.\n"
+            "Based on the existing tool output, summarize all objective facts found for this direction.\n\n"
         )
 
     return (
-        f"[探索方向 {intent.id} · 第 {step}/{max_rounds} 步]\n"
-        f"目标(goal): {board.goal}\n"
-        f"当前探索方向：{intent.description}{from_desc}\n"
+        f"[Exploration direction {intent.id} · step {step}/{max_rounds}]\n"
+        f"goal: {board.goal}\n"
+        f"Current exploration direction: {intent.description}{from_desc}\n"
         f"{conclude_override}"
         f"{tc_block}\n"
-        "## 执行规则（必须遵守）\n"
-        "1. 围绕当前方向用工具实际执行，每步必须有工具调用+响应分析。\n"
-        "2. ⚠ 绝对禁止重复调用上面「已执行过的工具」列表中出现过的同一工具+同一参数。\n"
-        "3. ⚠ 同一 URL 只 fetch 一次——如果已经 fetch 过，直接基于已有结果分析。\n"
-        "4. 若该方向走不通，明确说明原因并停止。\n"
-        "\n## 工具使用链路（按目标类型选择）\n"
-        "Web 渗透标准链路：\n"
-        "  ① js_recon(url=目标) — 抓 JS 提接口 + 自动未授权探测（**最先调用**）\n"
-        "  ② dir_enum(url=目标) — 目录枚举\n"
-        "  ③ space_search(domain=域名) — 空间测绘\n"
-        "  ④ subdomain_enum(domain=域名) — 子域名枚举\n"
-        "  ⑤ unauth_test(base_url, endpoints) — 对发现的接口做未授权验证\n"
-        "  ⑥ fetch(url, method) — 单个请求探测（仅用于 js_recon/dir_enum 未覆盖的特定路径）\n"
-        "Chrome MCP 链路：chrome_navigate → chrome_read_page/chrome_get_web_content → 分析（不要反复 navigate）\n"
+        "## Execution rules (must follow)\n"
+        "1. Actually execute with tools around the current direction; every step must include a tool call + response analysis.\n"
+        "2. ⚠ Absolutely do not re-invoke the same tool + same args that already appear in the \"already-executed tools\" list above.\n"
+        "3. ⚠ Fetch the same URL only once — if already fetched, analyze based on the existing result.\n"
+        "4. If the direction is a dead end, clearly state why and stop.\n"
+        "\n## Tool-usage chain (choose by target type)\n"
+        "Standard web-pentest chain:\n"
+        "  (1) js_recon(url=target) — crawl JS to extract endpoints + auto unauthorized probing (**call first**)\n"
+        "  (2) dir_enum(url=target) — directory enumeration\n"
+        "  (3) space_search(domain=domain) — cyberspace mapping\n"
+        "  (4) subdomain_enum(domain=domain) — subdomain enumeration\n"
+        "  (5) unauth_test(base_url, endpoints) — unauthorized-access verification of discovered endpoints\n"
+        "  (6) fetch(url, method) — single-request probe (only for specific paths not covered by js_recon/dir_enum)\n"
+        "Chrome MCP chain: chrome_navigate → chrome_read_page/chrome_get_web_content → analyze (don't navigate repeatedly)\n"
     )
 
 
@@ -516,7 +517,7 @@ async def explore_step(
         text = await call_llm_auto(agent, system_prompt, ctx, stream_sink=stream_sink)
         last_text = text or ""
         if not skip_context_write:
-            agent.context.add_assistant_message(f"[探索 {intent.id} 第{step}步] {last_text}")
+            agent.context.add_assistant_message(f"[Explore {intent.id} step {step}] {last_text}")
         if hasattr(agent, "_finding_parser"):
             agent._finding_parser.parse(last_text)
         lowered = last_text.lower()
@@ -529,7 +530,7 @@ async def explore_step(
         if cur_tc_count == prev_tc_count:
             no_new_tc_streak += 1
             if no_new_tc_streak >= 2:
-                last_text += "\n[!] 连续 2 步无新工具调用（空转），终止本方向。"
+                last_text += "\n[!] 2 consecutive steps with no new tool calls (spinning); terminating this direction."
                 break
         else:
             # 检查本步新增的调用是否全部是重复的（同 tool+key_args 已在之前出现）
@@ -540,7 +541,7 @@ async def explore_step(
                 for tc in new_tcs
             ) if new_tcs else True
             if all_repeated and step >= 2:
-                last_text += "\n[!] 本步所有工具调用均为重复调用，终止本方向。"
+                last_text += "\n[!] All tool calls this step were duplicates; terminating this direction."
                 break
             no_new_tc_streak = 0
         prev_tc_count = cur_tc_count
@@ -565,8 +566,8 @@ async def explore_step(
         evidence_lower = intent_evidence.lower()
         has_data = any(marker in evidence_lower for marker in [
             "status: 200", "200 ok", '"success"', "'success'",
-            "未授权", "疑似未授权", "返回数据",
-            "接口/路径", "命中",
+            "unauthorized", "suspected unauthorized", "returns data",
+            "endpoints/paths", "hits",
         ])
         if has_data and fact:
             advanced = True
@@ -640,9 +641,9 @@ async def solve(
     try:
         # 播种初始事实
         if not board.facts:
-            seed = f"目标 origin={origin}；目标 goal={goal}"
+            seed = f"origin={origin}; goal={goal}"
             if hints:
-                seed += "；提示：" + " | ".join(hints)
+                seed += "; hints: " + " | ".join(hints)
             board.add_fact(seed, source="origin")
 
         empty_reason_streak = 0
@@ -731,23 +732,23 @@ async def solve(
 
                     reject_reason: Optional[str] = None
                     if complete_flag is not True:
-                        reject_reason = "完成判定未使用显式 complete=true，按未达成处理"
+                        reject_reason = "Completion judgment did not use explicit complete=true; treated as not achieved"
                     elif not reason_text:
-                        reject_reason = "完成声明缺少 reason 说明"
+                        reject_reason = "Completion claim lacks a reason"
                     elif _has_negation(reason_text):
-                        reject_reason = f"完成理由含否定表述，实际未达成：{reason_text[:80]}"
+                        reject_reason = f"Completion reason contains negation phrasing; actually not achieved: {reason_text[:80]}"
                     elif not evidence_ids:
-                        reject_reason = "完成声明未引用任何已确认 fact 作为证据"
+                        reject_reason = "Completion claim references no confirmed fact as evidence"
                     elif not grounded:
                         reject_reason = why
                     elif fake:
-                        reject_reason = f"完成声明引用的 flag {fake[0]} 未在真实工具输出中出现"
+                        reject_reason = f"The flag {fake[0]} referenced in the completion claim did not appear in real tool output"
 
                     if reject_reason is None:
                         board.mark_complete(reason_text)
                         emit("completed", {"reason": reason_text})
                         break
-                    board.add_fact(f"[拒绝完成] {reject_reason}；继续探索验证", source="verify")
+                    board.add_fact(f"[completion rejected] {reject_reason}; continue exploring to verify", source="verify")
                     emit("complete_rejected", {"reason": reject_reason})
                     complete_reject_streak += 1
                     if complete_reject_streak >= 3:
@@ -805,7 +806,7 @@ async def solve(
                     )
                 except Exception as exc:
                     advanced, fact = False, ""
-                    results = [(intent, False, f"探索异常: {exc}", True)]
+                    results = [(intent, False, f"exploration error: {exc}", True)]
                 else:
                     results = [(intent, advanced, fact, False)]
                 finally:
@@ -827,9 +828,9 @@ async def solve(
                 full_evidence = "\n".join(evidence_buffer)
                 fake_flags = _unverified_flags(fact, full_evidence)
                 if fake_flags:
-                    note = f"声称获得 flag {fake_flags[0]} 但未在任何真实工具输出中出现，判定为幻觉，已拒绝"
+                    note = f"Claimed to obtain flag {fake_flags[0]} but it never appeared in any real tool output; judged a hallucination and rejected"
                     board.abandon_intent(intent.id, note=note)
-                    board.add_fact(f"[未验证] 探索 {intent.id}：{note}", source="verify")
+                    board.add_fact(f"[Unverified] explore {intent.id}: {note}", source="verify")
                     emit("hallucination", {"intent_id": intent.id, "flags": fake_flags})
                 elif advanced and fact:
                     new_fact = board.conclude_intent(intent.id, fact)
@@ -840,12 +841,12 @@ async def solve(
                     captured = _extract_flags(fact)
                     if captured and _goal_wants_flag(board.goal):
                         board.mark_complete(
-                            f"已从 {new_fact.id if new_fact else 'fact'} 验证获取 flag: {captured[0]}"
+                            f"Verified and obtained flag from {new_fact.id if new_fact else 'fact'}: {captured[0]}"
                         )
                         emit("completed", {"reason": board.complete_reason})
                         break
                 else:
-                    board.abandon_intent(intent.id, note=(fact or "未推进")[:120])
+                    board.abandon_intent(intent.id, note=(fact or "no progress")[:120])
                     emit("abandon", {"intent_id": intent.id, "note": fact})
 
             if board.completed:
@@ -863,7 +864,7 @@ async def solve(
                     tag = "✓" if advanced else ("✗ ERR" if is_error else "—")
                     summaries.append(f"[{intent.id} {tag}] {fact[:120]}")
                 agent.context.add_assistant_message(
-                    "[并行探索摘要]\n" + "\n".join(summaries)
+                    "[Parallel exploration summary]\n" + "\n".join(summaries)
                 )
     finally:
         agent._execute_mcp_tool = original_execute  # type: ignore[method-assign]
@@ -871,7 +872,7 @@ async def solve(
     reason = (
         board.complete_reason
         if board.completed
-        else ("探索前沿耗尽" if steps < max_steps else "触达安全预算上限")
+        else ("exploration frontier exhausted" if steps < max_steps else "reached the safety-budget limit")
     )
     return SolveResult(
         completed=board.completed,
@@ -914,7 +915,7 @@ async def _explore_batch(
             )
             return (intent, advanced, fact, False)
         except Exception as exc:
-            return (intent, False, f"探索异常: {exc}", True)
+            return (intent, False, f"exploration error: {exc}", True)
         finally:
             _current_worker.reset(ctx_token)
             for e in worker.evidence_buffer:
@@ -925,7 +926,7 @@ async def _explore_batch(
     results: list[tuple[BoardIntent, bool, str, bool]] = []
     for idx, r in enumerate(raw):
         if isinstance(r, BaseException):
-            results.append((intents[idx], False, f"探索异常: {r}", True))
+            results.append((intents[idx], False, f"exploration error: {r}", True))
         else:
             results.append(r)
     return results

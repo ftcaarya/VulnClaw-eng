@@ -96,28 +96,28 @@ class ReflexionEngine(BaseModel):
 
     def get_escalation_hints(self) -> list[str]:
         hints_by_level = {
-            0: ["先尝试原始 payload（不编码）。"],
+            0: ["Try the original payload first (no encoding)."],
             1: [
-                "URL 编码特殊字符。",
-                "切换关键字大小写（SeLeCt）。",
-                "尝试空白符变体（/**/、换行、Tab）。",
+                "URL-encode special characters.",
+                "Switch keyword case (SeLeCt).",
+                "Try whitespace variants (/**/, newline, Tab).",
             ],
             2: [
-                "尝试双重 URL 编码。",
-                "插入内联注释，如 /**/。",
-                "面向浏览器的注入点使用 HTML 实体编码。",
+                "Try double URL encoding.",
+                "Insert inline comments, e.g. /**/.",
+                "Use HTML-entity encoding for browser-facing injection points.",
             ],
             3: [
-                "尝试 Unicode 转义（\\u0027）。",
-                "尝试 hex 编码（0x...）。",
-                "用字符串拼接拆分关键字（con||cat）。",
-                "用等价的替代函数绕过被封函数。",
+                "Try Unicode escapes (\\u0027).",
+                "Try hex encoding (0x...).",
+                "Split keywords with string concatenation (con||cat).",
+                "Bypass banned functions with equivalent alternatives.",
             ],
             4: [
-                "组合多层编码混淆。",
-                "改用替代语法达成同样目的（如 HANDLER 代替 SELECT）。",
-                "改用时间盲注或带外（OOB）通道确认。",
-                "切换到完全不同的漏洞类型/攻击面。",
+                "Combine multiple encoding layers for obfuscation.",
+                "Use alternative syntax to achieve the same goal (e.g. HANDLER instead of SELECT).",
+                "Confirm via time-based blind injection or an out-of-band (OOB) channel.",
+                "Switch to a completely different vulnerability type / attack surface.",
             ],
         }
         return hints_by_level[self.get_escalation_level()]
@@ -170,15 +170,15 @@ class ReflexionEngine(BaseModel):
             return ""
 
         lines = [
-            "🔁 反思状态：",
-            f"- 连续无进展轮数: {self.state.consecutive_failures}",
-            f"- 同类漏洞失败次数: {self.state.vuln_type_fail_count}",
-            f"- 当前升级级别: L{self.get_escalation_level()}",
+            "🔁 Reflexion state:",
+            f"- Consecutive no-progress rounds: {self.state.consecutive_failures}",
+            f"- Same-vuln-type failure count: {self.state.vuln_type_fail_count}",
+            f"- Current escalation level: L{self.get_escalation_level()}",
         ]
 
         failed_paths = self.get_failed_paths()
         if failed_paths:
-            lines.append(f"- 已失败路径（勿重复）: {', '.join(failed_paths[:8])}")
+            lines.append(f"- Failed paths (do not repeat): {', '.join(failed_paths[:8])}")
 
         return "\n".join(lines)
 
@@ -188,19 +188,19 @@ class ReflexionEngine(BaseModel):
             return ""
 
         lines = [
-            "🔴 反思接管（同类攻击已连续失败，必须改变策略）：",
-            "- 停止在当前攻击路径上重复换 payload。",
-            "- 复盘失败记录，明确指出此前哪个假设很可能是错的。",
-            "- 在换下一个 payload 之前，先选择一条实质不同的攻击路径/漏洞类型。",
-            f"- 当前升级级别: L{self.get_escalation_level()}",
+            "🔴 Reflexion takeover (the same attack type has failed repeatedly; you must change strategy):",
+            "- Stop swapping payloads on the current attack path.",
+            "- Review the failure records and clearly point out which prior assumption was likely wrong.",
+            "- Before trying the next payload, choose a substantially different attack path / vulnerability type.",
+            f"- Current escalation level: L{self.get_escalation_level()}",
         ]
 
         if self.should_escalate():
-            lines.append("- ⚠️ 强制升级：切换到完全不同的漏洞类型或攻击面，不要再恋战当前方向。")
+            lines.append("- ⚠️ Forced escalation: switch to a completely different vulnerability type or attack surface; stop fixating on the current direction.")
 
         patterns = self.analyze_failure_patterns()
         if patterns:
-            lines.append("- 失败模式分析：")
+            lines.append("- Failure-pattern analysis:")
             for pattern in patterns[:3]:
                 lines.append(
                     f"  - {pattern['category']} ×{pattern['occurrences']}: "
@@ -209,7 +209,7 @@ class ReflexionEngine(BaseModel):
 
         hints = self.get_escalation_hints()
         if hints:
-            lines.append(f"- 本级（L{self.get_escalation_level()}）绕过提示：")
+            lines.append(f"- Level-{self.get_escalation_level()} bypass hints:")
             for hint in hints:
                 lines.append(f"  - {hint}")
 
@@ -235,19 +235,19 @@ class ReflexionEngine(BaseModel):
     def _suggest_for_category(category: str) -> str:
         suggestions = {
             FailureCategory.ENV_CONSTRAINT.value: (
-                "用编码/混淆绕过过滤，切换协议或端点，并确认访问限制（WAF/权限/限流）。"
+                "Bypass the filter with encoding/obfuscation, switch protocol or endpoint, and confirm access restrictions (WAF/permissions/rate limiting)."
             ),
             FailureCategory.PATH_ERROR.value: (
-                "降低该路径优先级，切换到不同的攻击面/漏洞类型。"
+                "Lower this path's priority and switch to a different attack surface / vulnerability type."
             ),
             FailureCategory.PARAM_ERROR.value: (
-                "调整参数名、分隔符、payload 语法或注入位置。"
+                "Adjust the parameter name, delimiter, payload syntax, or injection point."
             ),
             FailureCategory.INFO_NEEDED.value: (
-                "先补充侦察信息再重试该路径。"
+                "Gather more recon info before retrying this path."
             ),
         }
-        return suggestions.get(category, "复盘失败记录，换一种思路。")
+        return suggestions.get(category, "Review the failure records and try a different approach.")
 
 
 def classify_failure(response_text: str) -> FailureCategory | None:
@@ -273,18 +273,7 @@ def classify_failure(response_text: str) -> FailureCategory | None:
             "connection refused",
             "bad gateway",
             "service unavailable",
-            # 中文
-            "被拦截",
-            "被过滤",
-            "被waf",
-            "拦截",
-            "过滤掉",
-            "转义",
-            "禁止访问",
-            "无权限",
-            "权限不足",
-            "频率限制",
-            "限流",
+            "escaped",
         ],
         FailureCategory.PATH_ERROR: [
             # English
@@ -295,18 +284,7 @@ def classify_failure(response_text: str) -> FailureCategory | None:
             "false positive",
             "dead end",
             "wrong attack surface",
-            # 中文
-            "不存在该漏洞",
-            "没有漏洞",
-            "无漏洞",
-            "不是注入点",
-            "无注入",
-            "此处无",
-            "误报",
-            "死胡同",
-            "走不通",
-            "换攻击面",
-            "换个方向",
+            "change direction",
         ],
         FailureCategory.PARAM_ERROR: [
             # English
@@ -318,15 +296,6 @@ def classify_failure(response_text: str) -> FailureCategory | None:
             "malformed",
             "parse error",
             "delimiter",
-            # 中文
-            "参数错误",
-            "参数不对",
-            "payload无效",
-            "payload 无效",
-            "语法错误",
-            "编码错误",
-            "格式错误",
-            "分隔符",
         ],
         FailureCategory.INFO_NEEDED: [
             # English
@@ -337,15 +306,6 @@ def classify_failure(response_text: str) -> FailureCategory | None:
             "collect more",
             "fingerprint first",
             "enumerate first",
-            # 中文
-            "需要更多信息",
-            "信息不足",
-            "未知参数",
-            "先收集",
-            "先侦察",
-            "先枚举",
-            "先指纹",
-            "再收集",
         ],
     }
 
